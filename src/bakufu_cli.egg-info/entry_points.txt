@@ -1,0 +1,2 @@
+[console_scripts]
+bakufu = bakufu_cli.cli:main

@@ -1,0 +1,3 @@
+display_name: "Bakufu Wan Accelerators"
+short_description: "The WAN Accelerators section defines paths and operations for managing WAN accelerators."
+default_prompt: "Use bakufu-wan-accelerators for Veeam API operations and return structured JSON."

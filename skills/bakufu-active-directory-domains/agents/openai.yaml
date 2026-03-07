@@ -1,0 +1,3 @@
+display_name: "Bakufu Active Directory Domains"
+short_description: "The Active Directory Domains section defines paths and operations for managing Active Directory domains."
+default_prompt: "Use bakufu-active-directory-domains for Veeam API operations and return structured JSON."

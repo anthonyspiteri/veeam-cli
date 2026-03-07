@@ -1,0 +1,3 @@
+display_name: "Bakufu Credentials"
+short_description: "The Credentials section defines paths and operations for managing credentials records that are added to the backup server."
+default_prompt: "Use bakufu-credentials for Veeam API operations and return structured JSON."

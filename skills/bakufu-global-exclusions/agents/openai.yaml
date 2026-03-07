@@ -1,0 +1,3 @@
+display_name: "Bakufu Global Exclusions"
+short_description: "The Global Exclusions section defines paths and operations for managing which VMs will be excluded from processing, even if they are incl..."
+default_prompt: "Use bakufu-global-exclusions for Veeam API operations and return structured JSON."

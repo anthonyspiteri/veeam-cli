@@ -1,0 +1,3 @@
+display_name: "Bakufu Proxies"
+short_description: "The Proxies section defines paths and operations for managing backup proxies. NOTE In this version, the REST API supports VMware vSphere ..."
+default_prompt: "Use bakufu-proxies for Veeam API operations and return structured JSON."

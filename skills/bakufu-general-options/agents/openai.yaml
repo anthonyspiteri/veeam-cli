@@ -1,0 +1,3 @@
+display_name: "Bakufu General Options"
+short_description: "The General Options section defines paths and operations for retrieving and editing general settings of Veeam Backup & Replication."
+default_prompt: "Use bakufu-general-options for Veeam API operations and return structured JSON."

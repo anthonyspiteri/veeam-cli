@@ -1,0 +1,3 @@
+display_name: "Bakufu Security"
+short_description: "The Security section defines paths and operations for managing Security & Compliance Analyzer and getting four-eyes authorization events."
+default_prompt: "Use bakufu-security for Veeam API operations and return structured JSON."

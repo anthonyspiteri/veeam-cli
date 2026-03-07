@@ -1,0 +1,3 @@
+display_name: "Bakufu Configuration Backup"
+short_description: "The Configuration Backup section defines paths and operations for managing backup of the configuration database that Veeam Backup & Repli..."
+default_prompt: "Use bakufu-configuration-backup for Veeam API operations and return structured JSON."

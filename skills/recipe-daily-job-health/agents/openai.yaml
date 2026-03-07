@@ -1,0 +1,3 @@
+display_name: "Recipe Daily Job Health"
+short_description: "Summarize success, warning, and failed jobs in the last 24 hours."
+default_prompt: "Run recipe-daily-job-health and summarize outcome with evidence and follow-up commands."

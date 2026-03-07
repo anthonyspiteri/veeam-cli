@@ -1,0 +1,3 @@
+display_name: "Bakufu Replicas"
+short_description: "The Replicas section defines paths and operations for managing snapshot replicas."
+default_prompt: "Use bakufu-replicas for Veeam API operations and return structured JSON."

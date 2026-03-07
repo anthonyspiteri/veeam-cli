@@ -1,0 +1,3 @@
+display_name: "Recipe Traffic Rules Review"
+short_description: "Capture network traffic rule configuration for operations review."
+default_prompt: "Run recipe-traffic-rules-review and summarize outcome with evidence and follow-up commands."

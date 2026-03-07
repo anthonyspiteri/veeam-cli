@@ -1,0 +1,3 @@
+display_name: "Bakufu Shared"
+short_description: "Common auth, config, and Swagger-driven endpoint conventions."
+default_prompt: "Use bakufu-shared for Veeam API operations and return structured JSON."

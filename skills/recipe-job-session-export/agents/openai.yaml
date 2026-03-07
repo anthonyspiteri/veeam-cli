@@ -1,0 +1,3 @@
+display_name: "Recipe Job Session Export"
+short_description: "Export recent job session records for reporting."
+default_prompt: "Run recipe-job-session-export and summarize outcome with evidence and follow-up commands."

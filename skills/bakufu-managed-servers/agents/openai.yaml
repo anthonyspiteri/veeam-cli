@@ -1,0 +1,3 @@
+display_name: "Bakufu Managed Servers"
+short_description: "The Managed Servers section defines paths and operations for managing servers. NOTE In this version, the REST API supports the following ..."
+default_prompt: "Use bakufu-managed-servers for Veeam API operations and return structured JSON."

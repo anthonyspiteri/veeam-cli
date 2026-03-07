@@ -1,0 +1,3 @@
+display_name: "Bakufu Jobs"
+short_description: "The Jobs section defines paths and operations for managing jobs that are coordinated by the backup server. NOTE In this version, the REST..."
+default_prompt: "Use bakufu-jobs for Veeam API operations and return structured JSON."

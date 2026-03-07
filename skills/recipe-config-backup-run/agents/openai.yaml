@@ -1,0 +1,3 @@
+display_name: "Recipe Config Backup Run"
+short_description: "Start configuration backup and validate outcome."
+default_prompt: "Run recipe-config-backup-run and summarize outcome with evidence and follow-up commands."

@@ -1,0 +1,3 @@
+display_name: "Bakufu Traffic Rules"
+short_description: "The Traffic Rules section defines paths and operations for retrieving and editing information about network traffic rules that are config..."
+default_prompt: "Use bakufu-traffic-rules for Veeam API operations and return structured JSON."

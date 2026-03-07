@@ -1,0 +1,3 @@
+display_name: "Bakufu Inventory Browser"
+short_description: "The Inventory Browser section defines paths and operations that allow you to&#58; Retrieve virtualization servers and their virtual infra..."
+default_prompt: "Use bakufu-inventory-browser for Veeam API operations and return structured JSON."

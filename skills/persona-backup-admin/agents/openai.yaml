@@ -1,0 +1,3 @@
+display_name: "Persona Backup Admin"
+short_description: "Design and govern backup infrastructure and policy."
+default_prompt: "Use persona-backup-admin guidance to execute backup operations with concise status, risks, and next actions."

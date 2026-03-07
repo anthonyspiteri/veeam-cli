@@ -1,0 +1,3 @@
+display_name: "Bakufu Encryption"
+short_description: "The Encryption section defines paths and operations for managing KMS servers and passwords that are used for data encryption."
+default_prompt: "Use bakufu-encryption for Veeam API operations and return structured JSON."

@@ -1,0 +1,3 @@
+display_name: "Persona Security Admin"
+short_description: "Operate security analyzer, malware detection, and hardening controls."
+default_prompt: "Use persona-security-admin guidance to execute backup operations with concise status, risks, and next actions."

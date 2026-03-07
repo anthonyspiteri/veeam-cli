@@ -1,0 +1,3 @@
+display_name: "Bakufu Users And Roles"
+short_description: "The Users and Roles section defines paths and operations for managing Veeam Backup & Replication users, groups and assigned roles."
+default_prompt: "Use bakufu-users-and-roles for Veeam API operations and return structured JSON."

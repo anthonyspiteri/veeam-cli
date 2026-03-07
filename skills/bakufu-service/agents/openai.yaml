@@ -1,0 +1,3 @@
+display_name: "Bakufu Service"
+short_description: "The Service section defines paths and operations for retrieving information about the backup server where the REST API service is running."
+default_prompt: "Use bakufu-service for Veeam API operations and return structured JSON."

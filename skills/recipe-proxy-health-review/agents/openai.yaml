@@ -1,0 +1,3 @@
+display_name: "Recipe Proxy Health Review"
+short_description: "List backup proxies and validate operational readiness."
+default_prompt: "Run recipe-proxy-health-review and summarize outcome with evidence and follow-up commands."

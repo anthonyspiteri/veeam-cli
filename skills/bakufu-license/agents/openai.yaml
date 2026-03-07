@@ -1,0 +1,3 @@
+display_name: "Bakufu License"
+short_description: "The License section defines paths and operations for installing and managing licenses on the backup server."
+default_prompt: "Use bakufu-license for Veeam API operations and return structured JSON."

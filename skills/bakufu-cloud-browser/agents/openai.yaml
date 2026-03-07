@@ -1,0 +1,3 @@
+display_name: "Bakufu Cloud Browser"
+short_description: "The Cloud Browser section defines paths and operations for retrieving information about cloud compute and storage resources. The Cloud Br..."
+default_prompt: "Use bakufu-cloud-browser for Veeam API operations and return structured JSON."

@@ -1,0 +1,3 @@
+display_name: "Bakufu Failback"
+short_description: "The Failback section defines paths and operations for managing failback."
+default_prompt: "Use bakufu-failback for Veeam API operations and return structured JSON."

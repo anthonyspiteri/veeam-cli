@@ -1,0 +1,3 @@
+display_name: "Bakufu Backup Browsers"
+short_description: "The Backup Browser section defines paths and operations that allow you to&#58; Browse the file system, compare files and folders, and per..."
+default_prompt: "Use bakufu-backup-browsers for Veeam API operations and return structured JSON."

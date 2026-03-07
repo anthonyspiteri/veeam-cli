@@ -1,0 +1,12 @@
+[project]
+name = "bakufu-cli"
+version = "0.1.0"
+description = "POC CLI for Veeam Backup & Replication v13"
+authors = [{ name = "Anthony Spiteri" }]
+requires-python = ">=3.9"
+dependencies = [
+  "keyring>=25.0.0",
+]
+
+[project.scripts]
+bakufu = "bakufu_cli.cli:main"

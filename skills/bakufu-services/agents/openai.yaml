@@ -1,0 +1,3 @@
+display_name: "Bakufu Services"
+short_description: "The Services section defines a path and operation for retrieving information about associated backend services. You may need to connect t..."
+default_prompt: "Use bakufu-services for Veeam API operations and return structured JSON."

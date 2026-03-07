@@ -1,0 +1,3 @@
+display_name: "Bakufu Automation"
+short_description: "The Automation section defines paths and operations for granular import and export of objects available in the REST API. It can be useful..."
+default_prompt: "Use bakufu-automation for Veeam API operations and return structured JSON."

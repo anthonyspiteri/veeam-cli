@@ -1,0 +1,3 @@
+display_name: "Bakufu Connection"
+short_description: "The Connection section defines a path and operation for retrieving a TLS certificate or SSH fingerprint used to establish a secure connec..."
+default_prompt: "Use bakufu-connection for Veeam API operations and return structured JSON."

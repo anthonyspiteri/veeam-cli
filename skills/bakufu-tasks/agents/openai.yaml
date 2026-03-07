@@ -1,0 +1,3 @@
+display_name: "Bakufu Tasks"
+short_description: "The Tasks section defines paths and operations for managing tasks that are used to perform runtime operations (file restore and rescan of..."
+default_prompt: "Use bakufu-tasks for Veeam API operations and return structured JSON."

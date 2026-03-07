@@ -1,0 +1,3 @@
+display_name: "Recipe Config Backup Policy Review"
+short_description: "Review configuration backup policy and schedule."
+default_prompt: "Run recipe-config-backup-policy-review and summarize outcome with evidence and follow-up commands."

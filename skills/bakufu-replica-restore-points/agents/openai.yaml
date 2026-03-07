@@ -1,0 +1,3 @@
+display_name: "Bakufu Replica Restore Points"
+short_description: "The Replica Restore Points section defines paths and operations for managing restore points of snapshot replicas."
+default_prompt: "Use bakufu-replica-restore-points for Veeam API operations and return structured JSON."

@@ -1,0 +1,3 @@
+display_name: "Bakufu Restore Points"
+short_description: "The Restore Points section defines paths and operations for retrieving restore points created on the backup server and backed up disks fr..."
+default_prompt: "Use bakufu-restore-points for Veeam API operations and return structured JSON."

@@ -1,0 +1,3 @@
+display_name: "Bakufu Log Export"
+short_description: "The Log Export section defines paths and operations for exporting the backup server logs."
+default_prompt: "Use bakufu-log-export for Veeam API operations and return structured JSON."

@@ -1,0 +1,3 @@
+display_name: "Recipe Encryption Posture"
+short_description: "Review encryption and KMS configuration coverage."
+default_prompt: "Run recipe-encryption-posture and summarize outcome with evidence and follow-up commands."

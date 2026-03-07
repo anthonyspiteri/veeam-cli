@@ -1,0 +1,3 @@
+display_name: "Bakufu Restore"
+short_description: "The Restore section defines paths and operations for performing restore. NOTE In this version, the REST API supports the following recove..."
+default_prompt: "Use bakufu-restore for Veeam API operations and return structured JSON."

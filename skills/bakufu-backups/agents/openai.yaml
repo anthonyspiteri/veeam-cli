@@ -1,0 +1,3 @@
+display_name: "Bakufu Backups"
+short_description: "The Backups section defines paths and operations for managing backups that are created on or imported to the backup server."
+default_prompt: "Use bakufu-backups for Veeam API operations and return structured JSON."

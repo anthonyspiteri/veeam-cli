@@ -1,0 +1,3 @@
+display_name: "Recipe Rerun Failed Job"
+short_description: "Start a failed job again and monitor session completion."
+default_prompt: "Run recipe-rerun-failed-job and summarize outcome with evidence and follow-up commands."

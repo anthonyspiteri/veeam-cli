@@ -1,0 +1,3 @@
+display_name: "Bakufu Mount Servers"
+short_description: "The Mount Servers section defines paths and operations for managing mount servers in your backup infrastructure. Mount servers are used i..."
+default_prompt: "Use bakufu-mount-servers for Veeam API operations and return structured JSON."

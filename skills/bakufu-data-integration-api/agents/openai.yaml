@@ -1,0 +1,3 @@
+display_name: "Bakufu Data Integration Api"
+short_description: "The Data Integration API section defines paths and operations for publishing disks from backups and snapshot replicas."
+default_prompt: "Use bakufu-data-integration-api for Veeam API operations and return structured JSON."

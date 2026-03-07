@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: bakufu-cli
+Version: 0.1.0
+Summary: POC CLI for Veeam Backup & Replication v13
+Author: Anthony Spiteri
+Requires-Python: >=3.9
+Requires-Dist: keyring>=25.0.0

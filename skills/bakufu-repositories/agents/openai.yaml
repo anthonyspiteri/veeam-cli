@@ -1,0 +1,3 @@
+display_name: "Bakufu Repositories"
+short_description: "The Repositories section defines paths and operations for managing backup repositories. NOTE In this version, the REST API supports the f..."
+default_prompt: "Use bakufu-repositories for Veeam API operations and return structured JSON."

@@ -1,0 +1,3 @@
+display_name: "Bakufu Backup Objects"
+short_description: "The Backup Objects section defines paths and operations for managing backup objects — VMs and vApps that are included in backups created ..."
+default_prompt: "Use bakufu-backup-objects for Veeam API operations and return structured JSON."

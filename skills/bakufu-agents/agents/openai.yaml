@@ -1,0 +1,3 @@
+display_name: "Bakufu Agents"
+short_description: "The Agents section defines paths and operations for working with protection groups, obtaining protected computers, managing Veeam Agent a..."
+default_prompt: "Use bakufu-agents for Veeam API operations and return structured JSON."

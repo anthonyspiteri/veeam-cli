@@ -1,0 +1,3 @@
+display_name: "Persona Auditor"
+short_description: "Collect compliance evidence and produce operational audit summaries."
+default_prompt: "Use persona-auditor guidance to execute backup operations with concise status, risks, and next actions."

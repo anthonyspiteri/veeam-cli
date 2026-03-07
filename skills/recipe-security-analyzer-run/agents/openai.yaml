@@ -1,0 +1,3 @@
+display_name: "Recipe Security Analyzer Run"
+short_description: "Run Security Analyzer and summarize findings."
+default_prompt: "Run recipe-security-analyzer-run and summarize outcome with evidence and follow-up commands."

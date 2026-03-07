@@ -1,0 +1,3 @@
+display_name: "Bakufu Failover"
+short_description: "The Failover section defines paths and operations for managing failover."
+default_prompt: "Use bakufu-failover for Veeam API operations and return structured JSON."

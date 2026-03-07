@@ -1,0 +1,3 @@
+display_name: "Persona Dr Operator"
+short_description: "Validate restore readiness and execute DR runbooks."
+default_prompt: "Use persona-dr-operator guidance to execute backup operations with concise status, risks, and next actions."
