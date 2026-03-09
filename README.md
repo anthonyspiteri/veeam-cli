@@ -277,7 +277,15 @@ bakufu workflows investigateFailedJob --job-name "Daily Backup"
 bakufu workflows createWasabiRepo --spec @wasabi_repo.json
 bakufu workflows capacityReport
 bakufu workflows runSecurityAnalyzer
+bakufu workflows runSecurityAnalyzer --wait --timeout-ms 600000
 bakufu workflows validateImmutability
+```
+
+Security Analyzer result endpoints directly:
+
+```bash
+bakufu run Security GetSecurityAnalyzerSession
+bakufu run Security GetBestPracticesComplianceResult
 ```
 
 One-line license install from local `.lic` file:

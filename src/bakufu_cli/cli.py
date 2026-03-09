@@ -299,6 +299,9 @@ def cmd_skills_list(_args):
 
 
 def cmd_workflow(args):
+    if not args.workflow_id:
+        args._workflows_parser.print_help()
+        return
     workflow_name = f"bakufu.workflows.{args.workflow_id}"
     if workflow_name not in WORKFLOWS:
         raise CliError("WORKFLOW_NOT_FOUND", f"Workflow not found: {args.workflow_id}")
@@ -309,6 +312,10 @@ def cmd_workflow(args):
         payload["jobName"] = args.job_name
     if args.spec:
         payload["repoSpec"] = _parse_json_arg(args.spec)
+    if getattr(args, "wait", False):
+        payload["wait"] = True
+        payload["intervalMs"] = int(getattr(args, "interval_ms", 2000) or 2000)
+        payload["timeoutMs"] = int(getattr(args, "timeout_ms", 300000) or 300000)
     result = run_workflow(workflow_name, payload)
     if getattr(args, "formatted", None) == "table":
         rendered = _render_table(result)
@@ -1036,18 +1043,25 @@ def build_parser():
     sessions_logs.set_defaults(func=cmd_sessions_logs)
 
     workflows = subparsers.add_parser("workflows", help="Curated recipes")
-    workflows.add_argument("workflow_id", choices=[
-        "investigateFailedJob",
-        "createWasabiRepo",
-        "capacityReport",
-        "runSecurityAnalyzer",
-        "validateImmutability",
-    ])
+    workflows.add_argument(
+        "workflow_id",
+        nargs="?",
+        choices=[
+            "investigateFailedJob",
+            "createWasabiRepo",
+            "capacityReport",
+            "runSecurityAnalyzer",
+            "validateImmutability",
+        ],
+    )
     workflows.add_argument("--job-id")
     workflows.add_argument("--job-name")
     workflows.add_argument("--spec", help="JSON spec or @file")
+    workflows.add_argument("--wait", action="store_true", help="Wait for workflow completion (where supported)")
+    workflows.add_argument("--interval-ms", type=int, default=2000, help="Poll interval when --wait is used")
+    workflows.add_argument("--timeout-ms", type=int, default=300000, help="Max wait time when --wait is used")
     _add_output_flags(workflows)
-    workflows.set_defaults(func=cmd_workflow)
+    workflows.set_defaults(func=cmd_workflow, _workflows_parser=workflows)
 
     skills = subparsers.add_parser("skills", help="Skills library")
     skills.set_defaults(func=lambda _args: skills.print_help())

@@ -257,6 +257,7 @@ WORKFLOWS = {
 
 def run_workflow(name: str, arguments: dict):
     from .api import call_api
+    import time
     account = arguments.get("account")
 
     if name == "bakufu.workflows.investigateFailedJob":
@@ -295,7 +296,31 @@ def run_workflow(name: str, arguments: dict):
 
     if name == "bakufu.workflows.runSecurityAnalyzer":
         resp = call_api("/api/v1/securityAnalyzer/start", method="POST", data={}, pretty=False, account=account)
-        return json.loads(resp.get("body", "{}")) if resp.get("body") else {}
+        start = json.loads(resp.get("body", "{}")) if resp.get("body") else {}
+        if not arguments.get("wait"):
+            return {"start": start}
+
+        interval_ms = int(arguments.get("intervalMs", 2000) or 2000)
+        timeout_ms = int(arguments.get("timeoutMs", 300000) or 300000)
+        started_at = time.time()
+        target_id = start.get("id")
+        terminal = {"Stopped", "Failed", "Success", "Warning"}
+        latest = {}
+
+        while True:
+            last_resp = call_api("/api/v1/securityAnalyzer/lastRun", pretty=False, account=account)
+            latest = json.loads(last_resp.get("body", "{}")) if last_resp.get("body") else {}
+            state = latest.get("state")
+            same_session = bool(target_id) and latest.get("id") == target_id
+            if same_session and state in terminal:
+                break
+            if (time.time() - started_at) * 1000 > timeout_ms:
+                return {"start": start, "lastRun": latest, "state": "Timeout"}
+            time.sleep(interval_ms / 1000.0)
+
+        bp_resp = call_api("/api/v1/securityAnalyzer/bestPractices", pretty=False, account=account)
+        best_practices = json.loads(bp_resp.get("body", "{}")) if bp_resp.get("body") else {}
+        return {"start": start, "lastRun": latest, "bestPractices": best_practices}
 
     if name == "bakufu.workflows.validateImmutability":
         resp = call_api("/api/v1/backupInfrastructure/repositories", pretty=False, account=account)
