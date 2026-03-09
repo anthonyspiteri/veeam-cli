@@ -63,6 +63,10 @@ Version check:
 bakufu version
 ```
 
+Versioning is tag-driven (`setuptools-scm`):
+- release tags: `vX.Y.Z`
+- non-tagged commits: dev versions (for example `0.1.2.devN+g<sha>`)
+
 Pinned tag install/update:
 
 ```bash

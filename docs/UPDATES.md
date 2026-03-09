@@ -37,10 +37,15 @@ This gives predictable upgrades and rollbacks.
 bakufu version
 ```
 
+Versioning model:
+- Versions are derived automatically from Git tags via `setuptools-scm`.
+- Release tags must use `vX.Y.Z` format (example: `v0.1.1`).
+- Untagged commits install as dev builds (example: `0.1.2.dev3+g<sha>`).
+
 ## Publishing a New Release
 
 1. Ensure `main` is clean and pushed.
-2. Create and push a tag:
+2. Create and push a SemVer tag:
 
 ```bash
 git tag v0.1.1
