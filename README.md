@@ -50,9 +50,12 @@ python -m pip install -e .
 Binary install (no Python on target):
 
 ```bash
-# download from GitHub Releases, then:
-chmod +x bakufu-linux-x86_64
-sudo mv bakufu-linux-x86_64 /usr/local/bin/bakufu
+# one-command installer:
+curl -fsSL https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.sh | bash
+
+# or manual from release assets:
+# chmod +x bakufu-linux-x86_64
+# sudo mv bakufu-linux-x86_64 /usr/local/bin/bakufu
 bakufu version
 ```
 

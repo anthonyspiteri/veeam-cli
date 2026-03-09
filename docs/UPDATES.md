@@ -31,6 +31,12 @@ python -m pip install -U "git+https://github.com/anthonyspiteri/veeam-cli.git@v0
 
 This gives predictable upgrades and rollbacks.
 
+Binary-first update (no Python on target):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.sh | bash
+```
+
 ## Version Check
 
 ```bash
