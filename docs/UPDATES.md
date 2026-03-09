@@ -58,6 +58,12 @@ git tag v0.1.1
 git push origin v0.1.1
 ```
 
+Or use the one-shot helper:
+
+```bash
+scripts/release.sh v0.1.1
+```
+
 3. GitHub Actions (`.github/workflows/release.yml`) will:
 - Build `sdist` + `wheel`
 - Build standalone binaries for Linux/macOS/Windows

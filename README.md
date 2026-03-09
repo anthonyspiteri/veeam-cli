@@ -86,6 +86,12 @@ Pinned tag install/update:
 python -m pip install -U "git+https://github.com/anthonyspiteri/veeam-cli.git@v0.1.0"
 ```
 
+Cut and publish a release tag:
+
+```bash
+scripts/release.sh v0.1.1
+```
+
 ## Quick Start
 
 ```bash

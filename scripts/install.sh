@@ -57,15 +57,33 @@ else
   if [[ -n "${GITHUB_TOKEN:-}" ]]; then
     CURL_ARGS+=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
   fi
-  ASSET_URL="$(
-    curl "${CURL_ARGS[@]}" "${API_URL}" \
-      | python3 -c "import sys, json; d=json.load(sys.stdin); assets=d.get('assets', []); n='${ASSET_NAME}'; print(next((a['browser_download_url'] for a in assets if a.get('name')==n), ''))"
-  )"
-  if [[ -z "${ASSET_URL}" ]]; then
-    echo "Failed to resolve release asset ${ASSET_NAME}. For private repos, set GITHUB_TOKEN or use gh auth login." >&2
+  RELEASE_JSON="${TMP_DIR}/release.json"
+  if ! curl "${CURL_ARGS[@]}" -o "${RELEASE_JSON}" "${API_URL}"; then
+    echo "Failed to query latest release for ${OWNER}/${REPO}." >&2
+    echo "For private repos, authenticate first: gh auth login or export GITHUB_TOKEN=<token>." >&2
     exit 1
   fi
-  curl "${CURL_ARGS[@]}" -o "${TMP_DIR}/${ASSET_NAME}" "${ASSET_URL}"
+  ASSET_URL="$(
+    python3 -c "import json,sys
+try:
+    d=json.load(open('${RELEASE_JSON}','r',encoding='utf-8'))
+except Exception:
+    print('', end='')
+    raise SystemExit(0)
+assets=d.get('assets',[])
+n='${ASSET_NAME}'
+print(next((a.get('browser_download_url','') for a in assets if a.get('name')==n),''), end='')"
+  )"
+  if [[ -z "${ASSET_URL}" ]]; then
+    echo "Failed to resolve release asset ${ASSET_NAME} in latest release." >&2
+    echo "Check that a release exists and includes this asset. For private repos, use gh auth login or GITHUB_TOKEN." >&2
+    exit 1
+  fi
+  if ! curl "${CURL_ARGS[@]}" -o "${TMP_DIR}/${ASSET_NAME}" "${ASSET_URL}"; then
+    echo "Failed downloading ${ASSET_NAME} from release assets." >&2
+    echo "Confirm token/auth can access private release assets." >&2
+    exit 1
+  fi
 fi
 
 chmod +x "${TMP_DIR}/${ASSET_NAME}"
