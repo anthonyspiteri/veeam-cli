@@ -7,6 +7,7 @@ swagger_v1.3.json
 .github/workflows/release.yml
 docs/ARCHITECTURE.md
 docs/INSTALL.md
+docs/INSTALL_BINARY.md
 docs/SKILL_CONVENTIONS.md
 docs/UPDATES.md
 docs/skills.md
@@ -21,6 +22,7 @@ schemas/swagger_v1.3-rev1.json
 schemas/veeam_api_schema.json
 scripts/generate_skills.py
 scripts/sync_skills_from_swagger.py
+skills/.DS_Store
 skills/skills.json
 skills/bakufu-active-directory-domains/SKILL.md
 skills/bakufu-active-directory-domains/agents/openai.yaml
