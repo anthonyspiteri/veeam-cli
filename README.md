@@ -13,6 +13,7 @@ Swagger-driven operations, structured JSON output, MCP server mode, multi-accoun
 
 - Prerequisites
 - Installation
+- Updates
 - Quick Start
 - Why bakufu?
 - Authentication
@@ -34,6 +35,7 @@ Swagger-driven operations, structured JSON output, MCP server mode, multi-accoun
 ## Installation
 
 For OS-specific copy-paste commands, see `docs/INSTALL.md`.
+For update/upgrade flows, see `docs/UPDATES.md`.
 
 ```bash
 git clone <your-repo-url>
@@ -42,6 +44,29 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e .
+```
+
+## Updates
+
+Development clone update:
+
+```bash
+git pull
+source .venv/bin/activate
+python -m pip install -e .
+python scripts/sync_skills_from_swagger.py
+```
+
+Version check:
+
+```bash
+bakufu version
+```
+
+Pinned tag install/update:
+
+```bash
+python -m pip install -U "git+https://github.com/anthonyspiteri/veeam-cli.git@v0.1.0"
 ```
 
 ## Quick Start

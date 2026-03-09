@@ -1,6 +1,7 @@
 import argparse
 import base64
 import difflib
+import importlib.metadata
 import json
 import re
 import sys
@@ -312,7 +313,7 @@ def _completion_script_bash() -> str:
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   cmd="${COMP_WORDS[1]}"
   subcmd="${COMP_WORDS[2]}"
-  local top="auth auth-setup auth-login call services operations run schema jobs sessions workflows skills mcp license completion getting-started"
+  local top="auth auth-setup auth-login call services operations run schema jobs sessions workflows skills mcp license completion getting-started version"
 
   if [[ $COMP_CWORD -eq 1 ]]; then
     COMPREPLY=( $(compgen -W "$top --account -h --help" -- "$cur") )
@@ -375,6 +376,7 @@ def _completion_script_bash() -> str:
       ;;
     completion) COMPREPLY=( $(compgen -W "bash zsh -h --help" -- "$cur") ) ;;
     getting-started) COMPREPLY=( $(compgen -W "--demo --script --persona --pretty --raw -h --help backup-admin backup-operator security-admin dr-operator auditor" -- "$cur") ) ;;
+    version) COMPREPLY=( $(compgen -W "-h --help" -- "$cur") ) ;;
   esac
 }
 complete -F _bakufu_complete bakufu
@@ -394,7 +396,7 @@ _bakufu() {
     cmds)
       _values 'command' \
         auth auth-setup auth-login call services operations run schema \
-        jobs sessions workflows skills mcp license completion getting-started
+        jobs sessions workflows skills mcp license completion getting-started version
       ;;
     args)
       case $words[2] in
@@ -420,6 +422,7 @@ _bakufu() {
         license) _values 'license command' show install-file ;;
         completion) _values 'shell' bash zsh ;;
         getting-started) _values 'options' --demo --script --persona --pretty --raw backup-admin backup-operator security-admin dr-operator auditor ;;
+        version) _values 'options' ;;
       esac
       ;;
   esac
@@ -436,6 +439,13 @@ def cmd_completion(args):
         print(_completion_script_zsh())
         return
     raise CliError("COMPLETION_SHELL_UNSUPPORTED", f"Unsupported shell: {args.shell}")
+
+
+def cmd_version(_args):
+    try:
+        print(importlib.metadata.version("bakufu-cli"))
+    except importlib.metadata.PackageNotFoundError:
+        print("unknown")
 
 
 def cmd_getting_started(args):
@@ -1052,6 +1062,9 @@ def build_parser():
     group.add_argument("--raw", dest="pretty", action="store_false", help="Compact JSON output")
     getting_started.set_defaults(pretty=True, func=cmd_getting_started)
 
+    version_cmd = subparsers.add_parser("version", help="Print CLI version")
+    version_cmd.set_defaults(func=cmd_version)
+
     return parser
 
 
@@ -1061,7 +1074,7 @@ def _rewrite_shorthand(argv):
     known = {
         "auth", "auth-setup", "auth-login", "call", "services", "operations",
         "run", "schema", "jobs", "sessions", "workflows", "skills", "mcp",
-        "license", "completion", "getting-started", "-h", "--help",
+        "license", "completion", "getting-started", "version", "-h", "--help",
     }
     first = argv[0]
     if first in known:
