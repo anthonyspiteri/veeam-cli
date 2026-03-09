@@ -310,7 +310,15 @@ def cmd_workflow(args):
     if args.spec:
         payload["repoSpec"] = _parse_json_arg(args.spec)
     result = run_workflow(workflow_name, payload)
-    print(json.dumps(result, indent=2))
+    if getattr(args, "formatted", None) == "table":
+        rendered = _render_table(result)
+        if rendered:
+            print(rendered)
+            return
+    if args.pretty:
+        print(json.dumps(result, indent=2))
+    else:
+        print(json.dumps(result, separators=(",", ":")))
 
 
 def cmd_mcp(args):
@@ -1038,6 +1046,7 @@ def build_parser():
     workflows.add_argument("--job-id")
     workflows.add_argument("--job-name")
     workflows.add_argument("--spec", help="JSON spec or @file")
+    _add_output_flags(workflows)
     workflows.set_defaults(func=cmd_workflow)
 
     skills = subparsers.add_parser("skills", help="Skills library")
@@ -1093,6 +1102,8 @@ def build_parser():
 
 def _rewrite_shorthand(argv):
     if not argv:
+        return argv
+    if argv[0].startswith("-"):
         return argv
     known = {
         "auth", "auth-setup", "auth-login", "call", "services", "operations",
@@ -1169,10 +1180,47 @@ def _rewrite_shorthand(argv):
     return argv
 
 
+def _hoist_global_flags(argv):
+    if not argv:
+        return argv
+    account_value = None
+    insecure = False
+    remaining = []
+    i = 0
+    while i < len(argv):
+        token = argv[i]
+        if token == "--account":
+            if i + 1 < len(argv):
+                account_value = argv[i + 1]
+                i += 2
+                continue
+            remaining.append(token)
+            i += 1
+            continue
+        if token.startswith("--account="):
+            account_value = token.split("=", 1)[1]
+            i += 1
+            continue
+        if token == "--insecure":
+            insecure = True
+            i += 1
+            continue
+        remaining.append(token)
+        i += 1
+
+    prefix = []
+    if account_value:
+        prefix.extend(["--account", account_value])
+    if insecure:
+        prefix.append("--insecure")
+    return prefix + remaining
+
+
 def main():
     parser = build_parser()
     try:
         argv = _rewrite_shorthand(sys.argv[1:])
+        argv = _hoist_global_flags(argv)
         args = parser.parse_args(argv)
         if getattr(args, "insecure", False):
             os.environ["BAKUFU_INSECURE"] = "1"
