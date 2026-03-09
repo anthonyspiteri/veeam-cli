@@ -1,4 +1,5 @@
 import json
+import re
 import sys
 from typing import Optional, List, Dict, Any
 
@@ -67,8 +68,15 @@ def _tool_result(id_value: Any, text: str, is_error: bool = False) -> Dict[str, 
     return _ok(id_value, result)
 
 
+def _sanitize(s: str) -> str:
+    """Replace any character outside [a-zA-Z0-9_-] with an underscore."""
+    return re.sub(r"[^a-zA-Z0-9_-]", "_", s)
+
+
 def _tool_name(tag: str, operation_id: str) -> str:
-    return f"{tag}_{operation_id}"
+    # Use __ as the separator so we can unambiguously split even when the
+    # sanitized tag contains underscores (e.g. "Active_Directory_Domains").
+    return f"{_sanitize(tag)}__{operation_id}"
 
 
 def _build_swagger_input_schema(op: Operation) -> Dict[str, Any]:
@@ -222,14 +230,21 @@ def _handle_tools_call(
             return _tool_result(id_value, str(exc), is_error=True)
         return _tool_result(id_value, json.dumps(result))
 
-    if "_" not in name:
+    if "__" not in name:
         return _error(id_value, -32602, f"Unknown tool: {name}")
 
-    tag, operation_id = name.split("_", 1)
-    if services and tag not in services:
-        return _error(id_value, -32602, f"Service not exposed: {tag}")
+    sanitized_tag, operation_id = name.split("__", 1)
 
-    op = spec.find_operation(tag, operation_id)
+    # Reverse-lookup the original tag name from the sanitized form.
+    op = None
+    for tag, ops in spec.operations_by_tag().items():
+        if _sanitize(tag) != sanitized_tag:
+            continue
+        if services and tag not in services:
+            return _error(id_value, -32602, f"Service not exposed: {tag}")
+        op = next((o for o in ops if o.operation_id == operation_id), None)
+        break
+
     if not op:
         return _error(id_value, -32602, f"Operation not found: {name}")
 
