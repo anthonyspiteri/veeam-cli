@@ -2,9 +2,17 @@ import json
 import sys
 from typing import Optional, List, Dict, Any
 
+try:
+    from importlib.metadata import version as _pkg_version
+    _SERVER_VERSION = _pkg_version("bakufu-cli")
+except Exception:
+    _SERVER_VERSION = "0.0.0"
+
 from .api import call_api, call_api_paginated
-from .swagger import SwaggerSpec
+from .swagger import SwaggerSpec, Operation
 from .mcp_helpers import HELPERS, WORKFLOWS, run_workflow
+
+PROTOCOL_VERSION = "2025-03-26"
 
 
 def _write_message(obj: Dict[str, Any]) -> None:
@@ -38,6 +46,7 @@ def _read_message() -> Optional[Dict[str, Any]]:
 
 
 def _error(id_value: Any, code: int, message: str) -> Dict[str, Any]:
+    """JSON-RPC protocol-level error (for malformed requests, unknown methods, etc.)."""
     return {"jsonrpc": "2.0", "id": id_value, "error": {"code": code, "message": message}}
 
 
@@ -45,8 +54,75 @@ def _ok(id_value: Any, result: Dict[str, Any]) -> Dict[str, Any]:
     return {"jsonrpc": "2.0", "id": id_value, "result": result}
 
 
+def _tool_result(id_value: Any, text: str, is_error: bool = False) -> Dict[str, Any]:
+    """Successful JSON-RPC response wrapping a tool call result.
+
+    Per the MCP spec, tool execution errors must be returned as successful
+    JSON-RPC responses with isError=True so the LLM can see and recover from
+    them — NOT as JSON-RPC protocol-level errors.
+    """
+    result: Dict[str, Any] = {"content": [{"type": "text", "text": text}]}
+    if is_error:
+        result["isError"] = True
+    return _ok(id_value, result)
+
+
 def _tool_name(tag: str, operation_id: str) -> str:
-    return f"{tag}.{operation_id}"
+    return f"{tag}_{operation_id}"
+
+
+def _build_swagger_input_schema(op: Operation) -> Dict[str, Any]:
+    """Build a rich inputSchema for a Swagger operation, surfacing actual query params."""
+    query_props: Dict[str, Any] = {}
+    required_params: List[str] = []
+
+    for param in op.parameters:
+        if not isinstance(param, dict):
+            continue
+        if param.get("in") != "query":
+            continue
+        name = param.get("name")
+        if not name:
+            continue
+        schema = param.get("schema") or {}
+        prop: Dict[str, Any] = {"type": schema.get("type", "string")}
+        desc = param.get("description")
+        if desc:
+            prop["description"] = desc
+        if "enum" in schema:
+            prop["enum"] = schema["enum"]
+        if "default" in schema:
+            prop["default"] = schema["default"]
+        query_props[name] = prop
+        if param.get("required"):
+            required_params.append(name)
+
+    params_schema: Dict[str, Any] = {
+        "type": "object",
+        "description": "Query parameters for the API call",
+    }
+    if query_props:
+        params_schema["properties"] = query_props
+    if required_params:
+        params_schema["required"] = required_params
+
+    has_body = op.request_body is not None
+    json_desc = "Request body (required for POST/PUT/PATCH)" if has_body else "Request body (not used by this operation)"
+
+    return {
+        "type": "object",
+        "properties": {
+            "params": params_schema,
+            "json": {"type": "object", "description": json_desc},
+            "pretty": {"type": "boolean", "description": "Pretty-print JSON output"},
+            "pageAll": {"type": "boolean", "description": "Fetch all pages automatically (NDJSON output)"},
+            "pageLimit": {"type": "integer", "description": "Items per page when paginating (default 200)"},
+            "pageMax": {"type": "integer", "description": "Maximum pages to fetch (default 10)"},
+            "pageDelay": {"type": "integer", "description": "Delay between page requests in ms (default 100)"},
+            "dryRun": {"type": "boolean", "description": "Preview the request without executing it"},
+            "account": {"type": "string", "description": "Named account to use for authentication"},
+        },
+    }
 
 
 def build_tools(
@@ -66,20 +142,7 @@ def build_tools(
                 {
                     "name": _tool_name(tag, op.operation_id),
                     "description": op.summary or op.description or f"{op.method} {op.path}",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "params": {"type": "object"},
-                            "json": {"type": "object"},
-                            "pretty": {"type": "boolean"},
-                            "pageAll": {"type": "boolean"},
-                            "pageLimit": {"type": "integer"},
-                            "pageMax": {"type": "integer"},
-                            "pageDelay": {"type": "integer"},
-                            "dryRun": {"type": "boolean"},
-                            "account": {"type": "string"},
-                        },
-                    },
+                    "inputSchema": _build_swagger_input_schema(op),
                 }
             )
 
@@ -108,13 +171,12 @@ def build_tools(
 
 
 def _handle_initialize(id_value: Any, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    requested = None
-    if isinstance(params, dict):
-        requested = params.get("protocolVersion")
-    protocol_version = requested or "2024-11-05"
+    # Always respond with the version this server implements, regardless of what
+    # the client requests.  The client is responsible for disconnecting if it
+    # cannot handle our version.
     result = {
-        "protocolVersion": protocol_version,
-        "serverInfo": {"name": "bakufu-cli", "version": "0.1.0"},
+        "protocolVersion": PROTOCOL_VERSION,
+        "serverInfo": {"name": "bakufu-cli", "version": _SERVER_VERSION},
         "capabilities": {"tools": {"listChanged": False}},
     }
     return _ok(id_value, result)
@@ -143,27 +205,27 @@ def _handle_tools_call(
     if not name:
         return _error(id_value, -32602, "Invalid tool name")
 
+    arguments = params.get("arguments", {}) if isinstance(params, dict) else {}
+
     if include_helpers and name in HELPERS:
         handler = HELPERS[name]["handler"]
-        arguments = params.get("arguments", {}) if isinstance(params, dict) else {}
         try:
             result = handler(arguments)
         except Exception as exc:
-            return _error(id_value, -32603, str(exc))
-        return _ok(id_value, {"content": [{"type": "text", "text": json.dumps(result)}]})
+            return _tool_result(id_value, str(exc), is_error=True)
+        return _tool_result(id_value, json.dumps(result))
 
     if include_workflows and name in WORKFLOWS:
-        arguments = params.get("arguments", {}) if isinstance(params, dict) else {}
         try:
             result = run_workflow(name, arguments)
         except Exception as exc:
-            return _error(id_value, -32603, str(exc))
-        return _ok(id_value, {"content": [{"type": "text", "text": json.dumps(result)}]})
+            return _tool_result(id_value, str(exc), is_error=True)
+        return _tool_result(id_value, json.dumps(result))
 
-    if "." not in name:
-        return _error(id_value, -32602, "Invalid tool name")
+    if "_" not in name:
+        return _error(id_value, -32602, f"Unknown tool: {name}")
 
-    tag, operation_id = name.split(".", 1)
+    tag, operation_id = name.split("_", 1)
     if services and tag not in services:
         return _error(id_value, -32602, f"Service not exposed: {tag}")
 
@@ -171,7 +233,6 @@ def _handle_tools_call(
     if not op:
         return _error(id_value, -32602, f"Operation not found: {name}")
 
-    arguments = params.get("arguments", {}) if isinstance(params, dict) else {}
     call_params = arguments.get("params") or {}
     json_body = arguments.get("json")
     pretty = bool(arguments.get("pretty", False))
@@ -182,33 +243,36 @@ def _handle_tools_call(
     dry_run = bool(arguments.get("dryRun", False))
     account = arguments.get("account")
 
-    if page_all:
-        pages = call_api_paginated(
-            op.path,
-            params=call_params,
-            limit=page_limit,
-            max_pages=page_max,
-            page_delay_ms=page_delay,
-            method=op.method,
-            data=json_body,
-            pretty=pretty,
-            dry_run=dry_run,
-            account=account,
-        )
-        content = json.dumps(pages)
-    else:
-        response = call_api(
-            op.path,
-            method=op.method,
-            params=call_params,
-            data=json_body,
-            pretty=pretty,
-            dry_run=dry_run,
-            account=account,
-        )
-        content = json.dumps(response)
+    try:
+        if page_all:
+            pages = call_api_paginated(
+                op.path,
+                params=call_params,
+                limit=page_limit,
+                max_pages=page_max,
+                page_delay_ms=page_delay,
+                method=op.method,
+                data=json_body,
+                pretty=pretty,
+                dry_run=dry_run,
+                account=account,
+            )
+            content = json.dumps(pages)
+        else:
+            response = call_api(
+                op.path,
+                method=op.method,
+                params=call_params,
+                data=json_body,
+                pretty=pretty,
+                dry_run=dry_run,
+                account=account,
+            )
+            content = json.dumps(response)
+    except Exception as exc:
+        return _tool_result(id_value, str(exc), is_error=True)
 
-    return _ok(id_value, {"content": [{"type": "text", "text": content}]})
+    return _tool_result(id_value, content)
 
 
 def serve(
@@ -233,7 +297,7 @@ def serve(
             continue
 
         if method == "notifications/initialized":
-            # MCP notification: no response expected.
+            # Client confirms it is ready — no response expected for notifications.
             continue
 
         if method == "ping":

@@ -302,7 +302,7 @@ def cmd_workflow(args):
     if not args.workflow_id:
         args._workflows_parser.print_help()
         return
-    workflow_name = f"bakufu.workflows.{args.workflow_id}"
+    workflow_name = f"bakufu_workflows_{args.workflow_id}"
     if workflow_name not in WORKFLOWS:
         raise CliError("WORKFLOW_NOT_FOUND", f"Workflow not found: {args.workflow_id}")
     payload: Dict[str, Any] = {"account": args.account}

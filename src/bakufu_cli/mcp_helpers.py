@@ -84,7 +84,6 @@ def helper_repo_capacity(args: dict) -> dict:
 
 
 def helper_repo_add_wasabi(args: dict) -> dict:
-    # Expects full repository spec in args["spec"]
     spec = args.get("spec")
     if not spec:
         raise ValueError("spec is required")
@@ -112,95 +111,97 @@ def helper_object_storage_browse(args: dict) -> dict:
 
 
 HELPERS = {
-    "bakufu.jobs.startByName": {
-        "description": "Start a job by name and return session id.",
+    "bakufu_jobs_startByName": {
+        "description": "Start a backup job by name and return its session id.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "name": {"type": "string"},
-                "account": {"type": "string"},
+                "name": {"type": "string", "description": "Exact job name"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
             },
             "required": ["name"],
         },
         "handler": helper_jobs_start_by_name,
     },
-    "bakufu.jobs.lastResult": {
-        "description": "Fetch latest session for a job id.",
+    "bakufu_jobs_lastResult": {
+        "description": "Fetch the latest session for a given job id.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "jobId": {"type": "string"},
-                "account": {"type": "string"},
+                "jobId": {"type": "string", "description": "Veeam job UUID"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
             },
             "required": ["jobId"],
         },
         "handler": helper_jobs_last_result,
     },
-    "bakufu.sessions.follow": {
-        "description": "Poll a session until completion.",
+    "bakufu_sessions_follow": {
+        "description": "Poll a session until it reaches a terminal state (Success, Failed, Warning, Stopped).",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "sessionId": {"type": "string"},
-                "intervalMs": {"type": "integer"},
-                "timeoutMs": {"type": "integer"},
-                "account": {"type": "string"},
+                "sessionId": {"type": "string", "description": "Veeam session UUID to follow"},
+                "intervalMs": {"type": "integer", "description": "Polling interval in milliseconds (default 1000)"},
+                "timeoutMs": {"type": "integer", "description": "Maximum wait time in milliseconds (default 600000)"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
             },
             "required": ["sessionId"],
         },
         "handler": helper_session_follow,
     },
-    "bakufu.sessions.logs": {
-        "description": "Fetch session logs.",
+    "bakufu_sessions_logs": {
+        "description": "Fetch log entries for a session.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "sessionId": {"type": "string"},
-                "account": {"type": "string"},
+                "sessionId": {"type": "string", "description": "Veeam session UUID"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
             },
             "required": ["sessionId"],
         },
         "handler": helper_session_logs,
     },
-    "bakufu.repos.capacity": {
-        "description": "Summarize repository capacity and free space.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {"account": {"type": "string"}},
-        },
-        "handler": helper_repo_capacity,
-    },
-    "bakufu.repos.addWasabi": {
-        "description": "Create a Wasabi repository from spec.",
+    "bakufu_repos_capacity": {
+        "description": "Return repository capacity and free space summary for all repositories.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "spec": {"type": "object"},
-                "account": {"type": "string"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+        },
+        "handler": helper_repo_capacity,
+    },
+    "bakufu_repos_addWasabi": {
+        "description": "Create a Wasabi object storage repository from a spec object.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "spec": {"type": "object", "description": "Full repository creation spec (see Veeam API docs)"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
             },
             "required": ["spec"],
         },
         "handler": helper_repo_add_wasabi,
     },
-    "bakufu.cloudCredentials.add": {
-        "description": "Create cloud credentials.",
+    "bakufu_cloudCredentials_add": {
+        "description": "Create a new set of cloud credentials.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "spec": {"type": "object"},
-                "account": {"type": "string"},
+                "spec": {"type": "object", "description": "Cloud credentials creation spec (see Veeam API docs)"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
             },
             "required": ["spec"],
         },
         "handler": helper_cloud_credentials_add,
     },
-    "bakufu.objectStorage.browse": {
-        "description": "Browse object storage resources.",
+    "bakufu_objectStorage_browse": {
+        "description": "Browse object storage resources via the Veeam cloud browser.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "spec": {"type": "object"},
-                "account": {"type": "string"},
+                "spec": {"type": "object", "description": "Cloud browser request spec (see Veeam API docs)"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
             },
             "required": ["spec"],
         },
@@ -209,47 +210,56 @@ HELPERS = {
 }
 
 WORKFLOWS = {
-    "bakufu.workflows.investigateFailedJob": {
-        "description": "Find latest failed session for a job and return logs.",
+    "bakufu_workflows_investigateFailedJob": {
+        "description": "Find the latest failed session for a job and return its logs.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "jobId": {"type": "string"},
-                "jobName": {"type": "string"},
-                "account": {"type": "string"},
+                "jobId": {"type": "string", "description": "Veeam job UUID (provide jobId or jobName)"},
+                "jobName": {"type": "string", "description": "Exact job name (provide jobId or jobName)"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
             },
         },
     },
-    "bakufu.workflows.createWasabiRepo": {
-        "description": "Create Wasabi repo from cloud credentials and bucket info.",
+    "bakufu_workflows_createWasabiRepo": {
+        "description": "Create a Wasabi repository from cloud credentials and bucket info.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "repoSpec": {"type": "object"},
-                "account": {"type": "string"},
+                "repoSpec": {"type": "object", "description": "Full repository creation spec"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
             },
             "required": ["repoSpec"],
         },
     },
-    "bakufu.workflows.capacityReport": {
-        "description": "Return repository capacity report.",
+    "bakufu_workflows_capacityReport": {
+        "description": "Return a capacity report for all backup repositories.",
         "inputSchema": {
             "type": "object",
-            "properties": {"account": {"type": "string"}},
+            "properties": {
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
         },
     },
-    "bakufu.workflows.runSecurityAnalyzer": {
-        "description": "Start Security & Compliance Analyzer and return session.",
+    "bakufu_workflows_runSecurityAnalyzer": {
+        "description": "Start the Veeam Security and Compliance Analyzer and optionally wait for results.",
         "inputSchema": {
             "type": "object",
-            "properties": {"account": {"type": "string"}},
+            "properties": {
+                "wait": {"type": "boolean", "description": "Wait for the analyzer to finish before returning"},
+                "intervalMs": {"type": "integer", "description": "Polling interval in ms when waiting (default 2000)"},
+                "timeoutMs": {"type": "integer", "description": "Maximum wait time in ms (default 300000)"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
         },
     },
-    "bakufu.workflows.validateImmutability": {
-        "description": "Check object storage repositories for immutability settings.",
+    "bakufu_workflows_validateImmutability": {
+        "description": "Check all object storage repositories for immutability configuration.",
         "inputSchema": {
             "type": "object",
-            "properties": {"account": {"type": "string"}},
+            "properties": {
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
         },
     },
 }
@@ -260,7 +270,7 @@ def run_workflow(name: str, arguments: dict):
     import time
     account = arguments.get("account")
 
-    if name == "bakufu.workflows.investigateFailedJob":
+    if name == "bakufu_workflows_investigateFailedJob":
         job_id = arguments.get("jobId")
         job_name = arguments.get("jobName")
         if not job_id and not job_name:
@@ -283,18 +293,18 @@ def run_workflow(name: str, arguments: dict):
             logs = json.loads(logs_resp.get("body", "{}")) if logs_resp.get("body") else {}
         return {"latestFailed": latest, "logs": logs}
 
-    if name == "bakufu.workflows.createWasabiRepo":
+    if name == "bakufu_workflows_createWasabiRepo":
         spec = arguments.get("repoSpec")
         if not spec:
             raise ValueError("repoSpec required")
         resp = call_api("/api/v1/backupInfrastructure/repositories", method="POST", data=spec, pretty=False, account=account)
         return json.loads(resp.get("body", "{}")) if resp.get("body") else {}
 
-    if name == "bakufu.workflows.capacityReport":
+    if name == "bakufu_workflows_capacityReport":
         resp = call_api("/api/v1/backupInfrastructure/repositories/states", pretty=False, account=account)
         return json.loads(resp.get("body", "{}")) if resp.get("body") else {}
 
-    if name == "bakufu.workflows.runSecurityAnalyzer":
+    if name == "bakufu_workflows_runSecurityAnalyzer":
         resp = call_api("/api/v1/securityAnalyzer/start", method="POST", data={}, pretty=False, account=account)
         start = json.loads(resp.get("body", "{}")) if resp.get("body") else {}
         if not arguments.get("wait"):
@@ -322,7 +332,7 @@ def run_workflow(name: str, arguments: dict):
         best_practices = json.loads(bp_resp.get("body", "{}")) if bp_resp.get("body") else {}
         return {"start": start, "lastRun": latest, "bestPractices": best_practices}
 
-    if name == "bakufu.workflows.validateImmutability":
+    if name == "bakufu_workflows_validateImmutability":
         resp = call_api("/api/v1/backupInfrastructure/repositories", pretty=False, account=account)
         data = json.loads(resp.get("body", "{}")) if resp.get("body") else {}
         repos = data.get("data", [])
