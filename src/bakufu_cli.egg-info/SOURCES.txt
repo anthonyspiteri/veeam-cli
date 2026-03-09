@@ -1,4 +1,5 @@
 .DS_Store
+.gitignore
 README.md
 pyproject.toml
 swagger_v1.3.json
@@ -21,6 +22,9 @@ schemas/swagger_v1.3-rev0.json
 schemas/swagger_v1.3-rev1.json
 schemas/veeam_api_schema.json
 scripts/generate_skills.py
+scripts/install.ps1
+scripts/install.sh
+scripts/release.sh
 scripts/sync_skills_from_swagger.py
 skills/.DS_Store
 skills/skills.json
