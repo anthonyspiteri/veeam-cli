@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  python-dist:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,9 +27,93 @@ jobs:
           python -m build
           sha256sum dist/* > dist/SHA256SUMS.txt
 
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-dist
+          path: dist/*
+
+  binaries:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: bakufu-linux-x86_64
+            asset_name: bakufu-linux-x86_64
+            add_data: schemas:schemas
+            binary_path: dist/bakufu
+          - os: macos-latest
+            artifact_name: bakufu-macos-arm64
+            asset_name: bakufu-macos-arm64
+            add_data: schemas:schemas
+            binary_path: dist/bakufu
+          - os: windows-latest
+            artifact_name: bakufu-windows-x86_64
+            asset_name: bakufu-windows-x86_64.exe
+            add_data: schemas;schemas
+            binary_path: dist/bakufu.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build binary
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pyinstaller
+          pyinstaller \
+            --name bakufu \
+            --onefile \
+            --paths src \
+            --add-data "${{ matrix.add_data }}" \
+            src/bakufu_cli/cli.py
+          mkdir -p release
+          cp "${{ matrix.binary_path }}" "release/${{ matrix.asset_name }}"
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: release/${{ matrix.asset_name }}
+
+  publish:
+    needs: [python-dist, binaries]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Python dist
+        uses: actions/download-artifact@v4
+        with:
+          name: python-dist
+          path: release-assets
+
+      - name: Download Linux binary
+        uses: actions/download-artifact@v4
+        with:
+          name: bakufu-linux-x86_64
+          path: release-assets
+
+      - name: Download macOS binary
+        uses: actions/download-artifact@v4
+        with:
+          name: bakufu-macos-arm64
+          path: release-assets
+
+      - name: Download Windows binary
+        uses: actions/download-artifact@v4
+        with:
+          name: bakufu-windows-x86_64
+          path: release-assets
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/*
+            release-assets/*
           generate_release_notes: true

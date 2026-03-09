@@ -54,6 +54,7 @@ git push origin v0.1.1
 
 3. GitHub Actions (`.github/workflows/release.yml`) will:
 - Build `sdist` + `wheel`
+- Build standalone binaries for Linux/macOS/Windows
 - Generate checksums
 - Publish a GitHub Release with artifacts
 

@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional, List, Dict
@@ -13,13 +14,33 @@ def _resolve_swagger_path() -> Path:
     override = os.getenv("BAKUFU_SWAGGER_PATH")
     if override:
         return Path(override).expanduser()
-    candidates = sorted(
-        SCHEMAS_DIR.glob("swagger*.json"),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
-    )
-    if candidates:
-        return candidates[0]
+
+    search_roots: List[Path] = []
+    # PyInstaller onefile/unpacked runtime root
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        search_roots.append(Path(meipass))
+
+    # Installed package/repo roots
+    search_roots.append(PROJECT_ROOT)
+    search_roots.append(Path.cwd())
+
+    config_home = Path(os.getenv("BAKUFU_HOME", Path.home() / ".config" / "bakufu"))
+    search_roots.append(config_home)
+
+    for root in search_roots:
+        schemas_dir = root / "schemas"
+        candidates = sorted(
+            schemas_dir.glob("swagger*.json"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        if candidates:
+            return candidates[0]
+        legacy = root / "swagger_v1.3.json"
+        if legacy.exists():
+            return legacy
+
     return LEGACY_SWAGGER_PATH
 
 

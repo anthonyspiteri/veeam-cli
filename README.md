@@ -35,6 +35,7 @@ Swagger-driven operations, structured JSON output, MCP server mode, multi-accoun
 ## Installation
 
 For OS-specific copy-paste commands, see `docs/INSTALL.md`.
+For standalone executable installs, see `docs/INSTALL_BINARY.md`.
 For update/upgrade flows, see `docs/UPDATES.md`.
 
 ```bash
@@ -44,6 +45,15 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e .
+```
+
+Binary install (no Python on target):
+
+```bash
+# download from GitHub Releases, then:
+chmod +x bakufu-linux-x86_64
+sudo mv bakufu-linux-x86_64 /usr/local/bin/bakufu
+bakufu version
 ```
 
 ## Updates
