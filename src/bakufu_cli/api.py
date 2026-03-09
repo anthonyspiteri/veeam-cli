@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import urllib.parse
 import subprocess
@@ -6,6 +7,26 @@ from typing import Any, Optional, Dict
 
 from .config import load_credentials
 from .token import get_access_token
+
+
+def _is_truthy(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return False
+
+
+def _redact_cmd(cmd: list[str]) -> list[str]:
+    redacted = []
+    for part in cmd:
+        if part.lower().startswith("authorization: bearer "):
+            redacted.append("Authorization: Bearer ***")
+        else:
+            redacted.append(part)
+    return redacted
 
 
 def _encode_query(params: dict[str, Any]) -> str:
@@ -22,16 +43,25 @@ def _substitute_path(path: str, params: dict[str, Any]) -> tuple[str, dict[str, 
     return path, remaining
 
 
-def _curl_request(url: str, method: str, token: str, data: Optional[str], dry_run: bool = False):
+def _curl_request(
+    url: str,
+    method: str,
+    token: str,
+    data: Optional[str],
+    dry_run: bool = False,
+    insecure: bool = False,
+):
     header_fd, header_path = tempfile.mkstemp(prefix="bakufu_headers_")
     try:
-        cmd = ["curl", "-k", "-sS", "-D", header_path, "-X", method, "-H", f"Authorization: Bearer {token}"]
+        cmd = ["curl", "-sS", "-D", header_path, "-X", method, "-H", f"Authorization: Bearer {token}"]
+        if insecure:
+            cmd.insert(1, "-k")
         if data is not None:
             cmd += ["-H", "Content-Type: application/json", "-d", data]
         cmd.append(url)
 
         if dry_run:
-            return {"cmd": cmd, "status": None, "headers": {}, "body": ""}
+            return {"cmd": _redact_cmd(cmd), "status": None, "headers": {}, "body": ""}
 
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
@@ -53,7 +83,6 @@ def _curl_request(url: str, method: str, token: str, data: Optional[str], dry_ru
         return {"cmd": cmd, "status": status, "headers": headers, "body": body}
     finally:
         try:
-            import os
             os.close(header_fd)
             os.unlink(header_path)
         except OSError:
@@ -85,8 +114,16 @@ def call_api(
 
     token = get_access_token(force_refresh=refresh, account=account)
     payload = json.dumps(data) if data is not None else None
+    insecure = _is_truthy(creds.get("insecure")) or _is_truthy(os.getenv("BAKUFU_INSECURE"))
 
-    response = _curl_request(url, method=method, token=token, data=payload, dry_run=dry_run)
+    response = _curl_request(
+        url,
+        method=method,
+        token=token,
+        data=payload,
+        dry_run=dry_run,
+        insecure=insecure,
+    )
 
     if dry_run:
         return response

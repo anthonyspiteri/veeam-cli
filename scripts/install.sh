@@ -40,6 +40,7 @@ case "${ARCH}" in
 esac
 
 ASSET_NAME="${BINARY_NAME}-${OS_ASSET}-${ARCH_ASSET}"
+CHECKSUM_NAME="SHA256SUMS.txt"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
@@ -49,6 +50,11 @@ if command -v gh >/dev/null 2>&1; then
   gh release download \
     --repo "${OWNER}/${REPO}" \
     --pattern "${ASSET_NAME}" \
+    --dir "${TMP_DIR}" \
+    --clobber
+  gh release download \
+    --repo "${OWNER}/${REPO}" \
+    --pattern "${CHECKSUM_NAME}" \
     --dir "${TMP_DIR}" \
     --clobber
 else
@@ -74,9 +80,24 @@ assets=d.get('assets',[])
 n='${ASSET_NAME}'
 print(next((a.get('browser_download_url','') for a in assets if a.get('name')==n),''), end='')"
   )"
+  CHECKSUM_URL="$(
+    python3 -c "import json,sys
+try:
+    d=json.load(open('${RELEASE_JSON}','r',encoding='utf-8'))
+except Exception:
+    print('', end='')
+    raise SystemExit(0)
+assets=d.get('assets',[])
+n='${CHECKSUM_NAME}'
+print(next((a.get('browser_download_url','') for a in assets if a.get('name')==n),''), end='')"
+  )"
   if [[ -z "${ASSET_URL}" ]]; then
     echo "Failed to resolve release asset ${ASSET_NAME} in latest release." >&2
     echo "Check that a release exists and includes this asset. For private repos, use gh auth login or GITHUB_TOKEN." >&2
+    exit 1
+  fi
+  if [[ -z "${CHECKSUM_URL}" ]]; then
+    echo "Missing ${CHECKSUM_NAME} in latest release. Refusing unsigned install." >&2
     exit 1
   fi
   if ! curl "${CURL_ARGS[@]}" -o "${TMP_DIR}/${ASSET_NAME}" "${ASSET_URL}"; then
@@ -84,6 +105,40 @@ print(next((a.get('browser_download_url','') for a in assets if a.get('name')==n
     echo "Confirm token/auth can access private release assets." >&2
     exit 1
   fi
+  if ! curl "${CURL_ARGS[@]}" -o "${TMP_DIR}/${CHECKSUM_NAME}" "${CHECKSUM_URL}"; then
+    echo "Failed downloading ${CHECKSUM_NAME}." >&2
+    exit 1
+  fi
+fi
+
+CHECKSUM_FILE="${TMP_DIR}/${CHECKSUM_NAME}"
+if [[ ! -f "${CHECKSUM_FILE}" ]]; then
+  echo "Missing ${CHECKSUM_NAME}; cannot verify binary integrity." >&2
+  exit 1
+fi
+
+EXPECTED_HASH="$(
+  awk -v n="${ASSET_NAME}" '
+    $2 == n || $2 == ("*" n) { print $1; exit }
+  ' "${CHECKSUM_FILE}"
+)"
+if [[ -z "${EXPECTED_HASH}" ]]; then
+  echo "No checksum entry for ${ASSET_NAME} in ${CHECKSUM_NAME}." >&2
+  exit 1
+fi
+
+if command -v sha256sum >/dev/null 2>&1; then
+  ACTUAL_HASH="$(sha256sum "${TMP_DIR}/${ASSET_NAME}" | awk '{print $1}')"
+elif command -v shasum >/dev/null 2>&1; then
+  ACTUAL_HASH="$(shasum -a 256 "${TMP_DIR}/${ASSET_NAME}" | awk '{print $1}')"
+else
+  echo "No SHA256 tool found (expected sha256sum or shasum)." >&2
+  exit 1
+fi
+
+if [[ "${EXPECTED_HASH}" != "${ACTUAL_HASH}" ]]; then
+  echo "Checksum verification failed for ${ASSET_NAME}." >&2
+  exit 1
 fi
 
 chmod +x "${TMP_DIR}/${ASSET_NAME}"

@@ -8,6 +8,10 @@ Quick install paths for macOS, Linux, and Windows.
 - `curl` in `PATH`
 - Access to a Veeam Backup & Replication v13 REST endpoint
 
+Security defaults:
+- TLS verification is on by default.
+- Use `--insecure` only for trusted lab/self-signed environments.
+
 ## macOS / Linux (bash/zsh)
 
 ```bash
@@ -69,6 +73,12 @@ Interactive setup (recommended):
 bakufu auth setup lab --default
 ```
 
+Self-signed lab certificates:
+
+```bash
+bakufu --insecure auth setup lab --default
+```
+
 Then:
 
 ```bash
@@ -86,3 +96,4 @@ bakufu jobs list --pretty
 - `BAKUFU_HOME` default config/token dir (default `~/.config/bakufu`)
 - `BAKUFU_ACCOUNT` default account name
 - `BAKUFU_SWAGGER_PATH` explicit schema file path
+- `BAKUFU_INSECURE` set to `1|true|yes|on` to disable TLS verification for the current shell

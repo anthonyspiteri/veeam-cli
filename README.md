@@ -47,6 +47,10 @@ python -m pip install --upgrade pip
 python -m pip install -e .
 ```
 
+Security defaults:
+- TLS certificate validation is enabled by default.
+- Use `--insecure` only for lab/self-signed certificate scenarios.
+
 Binary install (no Python on target):
 
 ```bash
@@ -58,6 +62,10 @@ curl -fsSL https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scrip
 # sudo mv bakufu-linux-x86_64 /usr/local/bin/bakufu
 bakufu version
 ```
+
+Binary installer security:
+- Installers require and verify release `SHA256SUMS.txt` before install.
+- For private repos, authenticate with `gh auth login` or `GITHUB_TOKEN`.
 
 ## Updates
 
@@ -103,6 +111,12 @@ bakufu jobs list --pretty
 bakufu license show --pretty
 ```
 
+For self-signed lab certs only:
+
+```bash
+bakufu --insecure auth setup lab --default
+```
+
 Run any Swagger operation dynamically:
 
 ```bash
@@ -135,6 +149,12 @@ Interactive setup and validation:
 bakufu auth setup lab --default
 ```
 
+For self-signed cert labs only:
+
+```bash
+bakufu auth setup lab --default --insecure
+```
+
 Direct account add:
 
 ```bash
@@ -158,6 +178,7 @@ Credential storage:
 - Account metadata: `~/.config/bakufu/accounts.json` (or `BAKUFU_HOME` override)
 - Passwords: OS keyring (`keyring` Python package)
 - Legacy fallback: `.bakufu/accounts.json` and `.bakufu/token*.json` are still read
+- Legacy plaintext account passwords are auto-migrated into keyring when encountered
 
 ## AI Agent Skills
 
@@ -289,6 +310,7 @@ All variables are optional.
 - `BAKUFU_ACCOUNT`: Default account name (overridden by `--account`)
 - `BAKUFU_HOME`: Config/token directory (default `~/.config/bakufu`)
 - `BAKUFU_SWAGGER_PATH`: Override Swagger JSON path
+- `BAKUFU_INSECURE`: Disable TLS verification (`1|true|yes|on`) for current process
 
 Credential resolution precedence:
 1. `BAKUFU_TOKEN` (token only)
@@ -321,6 +343,13 @@ bakufu auth setup lab --default
 `Failed to obtain token`:
 - Verify server URL, DNS, port (`9419`), and credentials.
 - Check if REST API is reachable: `bakufu call /api/v1/serverInfo --dry-run`
+
+`SSL certificate problem`:
+- Preferred: trust the VBR certificate chain on your host.
+- Temporary lab workaround: add `--insecure` to the command.
+
+`--dry-run` output and secrets:
+- `Authorization` header is redacted in request preview output.
 
 No account found / wrong account used:
 - Run `bakufu auth list`

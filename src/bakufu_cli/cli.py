@@ -3,6 +3,7 @@ import base64
 import difflib
 import importlib.metadata
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -81,7 +82,14 @@ def cmd_auth_login(args):
         password = getpass.getpass("Password: ")
     if not server or not username or not password:
         raise CliError("AUTH_INPUT_INVALID", "Missing server/username/password")
-    add_account(args.account_name, server, username, password, make_default=args.default)
+    add_account(
+        args.account_name,
+        server,
+        username,
+        password,
+        make_default=args.default,
+        insecure=bool(args.insecure),
+    )
     print("OK")
 
 
@@ -99,7 +107,14 @@ def cmd_auth_setup(args):
         password = getpass.getpass("Password: ")
     if not server or not username or not password:
         raise CliError("AUTH_INPUT_INVALID", "Missing server/username/password")
-    result = auth_setup(server, username, password, args.account_name, make_default=args.default)
+    result = auth_setup(
+        server,
+        username,
+        password,
+        args.account_name,
+        make_default=args.default,
+        insecure=bool(args.insecure),
+    )
     print(json.dumps(result, indent=2))
 
 
@@ -316,7 +331,7 @@ def _completion_script_bash() -> str:
   local top="auth auth-setup auth-login call services operations run schema jobs sessions workflows skills mcp license completion getting-started version"
 
   if [[ $COMP_CWORD -eq 1 ]]; then
-    COMPREPLY=( $(compgen -W "$top --account -h --help" -- "$cur") )
+    COMPREPLY=( $(compgen -W "$top --account --insecure -h --help" -- "$cur") )
     return 0
   fi
 
@@ -325,7 +340,7 @@ def _completion_script_bash() -> str:
       if [[ $COMP_CWORD -eq 2 ]]; then
         COMPREPLY=( $(compgen -W "setup login list default token" -- "$cur") )
       else
-        COMPREPLY=( $(compgen -W "--server --username --password --default --refresh --account -h --help" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--server --username --password --default --refresh --account --insecure -h --help" -- "$cur") )
       fi
       ;;
     jobs)
@@ -364,9 +379,9 @@ def _completion_script_bash() -> str:
         COMPREPLY=( $(compgen -W "--params --json --pretty --raw --formatted --refresh --dry-run --page-all --page-limit --page-max --page-delay -h --help" -- "$cur") )
       fi
       ;;
-    call) COMPREPLY=( $(compgen -W "--method --params --json --pretty --raw --formatted --refresh --dry-run -h --help" -- "$cur") ) ;;
+    call) COMPREPLY=( $(compgen -W "--method --params --json --pretty --raw --formatted --refresh --dry-run --insecure -h --help" -- "$cur") ) ;;
     operations) COMPREPLY=( $(compgen -W "--tag -h --help" -- "$cur") ) ;;
-    mcp) COMPREPLY=( $(compgen -W "--services --helpers --workflows -h --help" -- "$cur") ) ;;
+    mcp) COMPREPLY=( $(compgen -W "--services --helpers --workflows --insecure -h --help" -- "$cur") ) ;;
     license)
       if [[ $COMP_CWORD -eq 2 ]]; then
         COMPREPLY=( $(compgen -W "show install-file" -- "$cur") )
@@ -389,6 +404,7 @@ _bakufu() {
   local state
   _arguments -C \
     '--account[Use named account]:account:' \
+    '--insecure[Disable TLS certificate verification]' \
     '1:command:->cmds' \
     '*::arg:->args'
 
@@ -416,7 +432,7 @@ _bakufu() {
             _ops=("${(@f)$(bakufu operations --tag "$words[3]" 2>/dev/null | awk '{print $2}')}")
             compadd -- ${_ops}
           else
-            _values 'run options' --params --json --pretty --raw --formatted --refresh --dry-run --page-all --page-limit --page-max --page-delay
+            _values 'run options' --params --json --pretty --raw --formatted --refresh --dry-run --page-all --page-limit --page-max --page-delay --insecure
           fi
           ;;
         license) _values 'license command' show install-file ;;
@@ -800,6 +816,8 @@ def _raise_for_http_error(response: Dict[str, Any]) -> None:
         hint = "Endpoint or object not found. Validate operation/path and object IDs."
     elif "License restrictions apply" in body:
         hint = "Install a valid VBR license first: `bakufu license install-file /path/to/license.lic --pretty`."
+    elif "SSL certificate problem" in body:
+        hint = "Certificate verification failed. Use trusted certs, or explicitly opt in with `--insecure`."
 
     raise CliError(error_code, message, hint=hint, details=details)
 
@@ -888,6 +906,7 @@ def _add_auth_parser(subparsers):
     auth_setup_cmd.add_argument("--username")
     auth_setup_cmd.add_argument("--password")
     auth_setup_cmd.add_argument("--default", action="store_true")
+    auth_setup_cmd.add_argument("--insecure", action="store_true", help="Disable TLS certificate verification")
     auth_setup_cmd.set_defaults(func=cmd_auth_setup)
 
     auth_login = auth_sub.add_parser("login", help="Add account without setup checks")
@@ -896,6 +915,7 @@ def _add_auth_parser(subparsers):
     auth_login.add_argument("--username")
     auth_login.add_argument("--password")
     auth_login.add_argument("--default", action="store_true")
+    auth_login.add_argument("--insecure", action="store_true", help="Disable TLS certificate verification")
     auth_login.set_defaults(func=cmd_auth_login)
 
     auth_list = auth_sub.add_parser("list", help="List configured accounts")
@@ -917,6 +937,7 @@ def _add_auth_parser(subparsers):
     auth_setup_legacy.add_argument("--username")
     auth_setup_legacy.add_argument("--password")
     auth_setup_legacy.add_argument("--default", action="store_true")
+    auth_setup_legacy.add_argument("--insecure", action="store_true", help="Disable TLS certificate verification")
     auth_setup_legacy.set_defaults(func=cmd_auth_setup)
 
     auth_login_legacy = subparsers.add_parser("auth-login", help="Legacy alias for `auth login`")
@@ -925,12 +946,14 @@ def _add_auth_parser(subparsers):
     auth_login_legacy.add_argument("--username")
     auth_login_legacy.add_argument("--password")
     auth_login_legacy.add_argument("--default", action="store_true")
+    auth_login_legacy.add_argument("--insecure", action="store_true", help="Disable TLS certificate verification")
     auth_login_legacy.set_defaults(func=cmd_auth_login)
 
 
 def build_parser():
     parser = BakufuArgumentParser(prog="bakufu", description="bakufu-cli for Veeam B&R v13")
     parser.add_argument("--account", help="Use a named account from ~/.config/bakufu/accounts.json")
+    parser.add_argument("--insecure", action="store_true", help="Disable TLS certificate verification for this command")
 
     subparsers = parser.add_subparsers(dest="command")
     _add_auth_parser(subparsers)
@@ -1151,6 +1174,8 @@ def main():
     try:
         argv = _rewrite_shorthand(sys.argv[1:])
         args = parser.parse_args(argv)
+        if getattr(args, "insecure", False):
+            os.environ["BAKUFU_INSECURE"] = "1"
         if not hasattr(args, "func"):
             parser.print_help()
             sys.exit(1)
@@ -1167,11 +1192,14 @@ def main():
         print(json.dumps(payload, indent=2), file=sys.stderr)
         sys.exit(1)
     except Exception as exc:
+        hint = "Run `bakufu auth setup <account>` and verify server reachability."
+        if "SSL certificate problem" in str(exc):
+            hint = "TLS validation failed. Use a trusted certificate, or retry with `--insecure`."
         payload = {
             "error": {
                 "code": "UNHANDLED_EXCEPTION",
                 "message": str(exc),
-                "hint": "Run `bakufu auth setup <account>` and verify server reachability.",
+                "hint": hint,
             }
         }
         print(json.dumps(payload, indent=2), file=sys.stderr)

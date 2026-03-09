@@ -1,12 +1,15 @@
 import json
 import subprocess
+import urllib.parse
 from urllib.parse import urljoin
 
 from .accounts import add_account
 
 
-def _curl_json(url: str):
-    cmd = ["curl", "-k", "-sS", "-w", "\\n%{http_code}", url]
+def _curl_json(url: str, insecure: bool = False):
+    cmd = ["curl", "-sS", "-w", "\\n%{http_code}", url]
+    if insecure:
+        cmd.insert(1, "-k")
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or "curl failed")
@@ -23,36 +26,48 @@ def _curl_json(url: str):
     return {"status": status, "body": body, "json": parsed}
 
 
-def _curl_token(server: str, username: str, password: str):
+def _curl_token(server: str, username: str, password: str, insecure: bool = False):
+    form_payload = urllib.parse.urlencode(
+        {
+            "grant_type": "password",
+            "username": username,
+            "password": password,
+        }
+    )
     cmd = [
         "curl",
-        "-k",
         "-s",
+        "--show-error",
         "--fail",
         "-X",
         "POST",
         f"{server.rstrip('/')}/api/oauth2/token",
         "-H",
         "Content-Type: application/x-www-form-urlencoded",
-        "-d",
-        "grant_type=password",
-        "-d",
-        f"username={username}",
-        "-d",
-        f"password={password}",
+        "--data-binary",
+        "@-",
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    if insecure:
+        cmd.insert(1, "-k")
+    result = subprocess.run(cmd, input=form_payload, capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or "Failed to obtain token")
     return json.loads(result.stdout)
 
 
-def setup(server: str, username: str, password: str, account_name: str, make_default: bool = False):
+def setup(
+    server: str,
+    username: str,
+    password: str,
+    account_name: str,
+    make_default: bool = False,
+    insecure: bool = False,
+):
     server = server.rstrip("/")
 
     # Validate API is reachable (serverInfo + swagger)
-    server_info = _curl_json(urljoin(server + "/", "api/v1/serverInfo"))
-    swagger = _curl_json(urljoin(server + "/", "swagger/v1.3-rev0/swagger.json"))
+    server_info = _curl_json(urljoin(server + "/", "api/v1/serverInfo"), insecure=insecure)
+    swagger = _curl_json(urljoin(server + "/", "swagger/v1.3-rev0/swagger.json"), insecure=insecure)
 
     if not swagger.get("json"):
         raise RuntimeError(f"Unable to fetch swagger spec (HTTP {swagger.get('status')})")
@@ -62,10 +77,10 @@ def setup(server: str, username: str, password: str, account_name: str, make_def
         raise RuntimeError(f"Unable to fetch /api/v1/serverInfo (HTTP {server_info.get('status')})")
 
     # Validate credentials
-    token_data = _curl_token(server, username, password)
+    token_data = _curl_token(server, username, password, insecure=insecure)
 
     # Store account
-    add_account(account_name, server, username, password, make_default=make_default)
+    add_account(account_name, server, username, password, make_default=make_default, insecure=insecure)
 
     return {
         "server": server,

@@ -10,13 +10,20 @@ TOKEN_DIR = Path(os.getenv("BAKUFU_HOME", Path.home() / ".config" / "bakufu"))
 LEGACY_TOKEN_DIR = Path(".bakufu")
 
 
+def truthy_env(value: Optional[str]) -> bool:
+    if value is None:
+        return False
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def load_credentials(account: Optional[str] = None):
     # Highest priority: explicit env var credentials
     server = os.getenv("BAKUFU_SERVER")
     username = os.getenv("BAKUFU_USER")
     password = os.getenv("BAKUFU_PASS")
+    insecure_env = truthy_env(os.getenv("BAKUFU_INSECURE"))
     if server and username and password:
-        return {"server": server, "username": username, "password": password}
+        return {"server": server, "username": username, "password": password, "insecure": insecure_env}
 
     # If account is specified or defaulted, use accounts.json
     resolved = resolve_account(account)
@@ -25,6 +32,8 @@ def load_credentials(account: Optional[str] = None):
         if creds:
             merged = dict(creds)
             merged["account"] = resolved
+            if "insecure" not in merged:
+                merged["insecure"] = insecure_env
             return merged
 
     # Credentials file override
@@ -36,9 +45,10 @@ def load_credentials(account: Optional[str] = None):
             "server": data.get("server"),
             "username": data.get("username"),
             "password": data.get("password"),
+            "insecure": bool(data.get("insecure", insecure_env)),
         }
 
-    return {"server": server, "username": username, "password": password}
+    return {"server": server, "username": username, "password": password, "insecure": insecure_env}
 
 
 def token_path_for_account(account: Optional[str] = None) -> Path:

@@ -37,6 +37,10 @@ Binary-first update (no Python on target):
 curl -fsSL https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.sh | bash
 ```
 
+Installer behavior:
+- Verifies binary integrity against release `SHA256SUMS.txt`.
+- For private repos, authenticate with `gh auth login` or set `GITHUB_TOKEN`.
+
 ## Version Check
 
 ```bash

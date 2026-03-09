@@ -16,6 +16,11 @@ Install `bakufu` as a standalone executable (no Python/venv required on target h
 # Option A: one-command installer from this repo
 curl -fsSL https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.sh | bash
 
+# Option A (private repo): run installer from local clone
+git clone git@github.com:anthonyspiteri/veeam-cli.git
+cd veeam-cli
+bash scripts/install.sh
+
 # Option B: manual
 chmod +x bakufu-linux-x86_64
 sudo mv bakufu-linux-x86_64 /usr/local/bin/bakufu
@@ -38,6 +43,11 @@ bakufu getting-started
 # Option A: one-command installer from this repo
 irm https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.ps1 | iex
 
+# Option A (private repo): run installer from local clone
+git clone git@github.com:anthonyspiteri/veeam-cli.git
+cd veeam-cli
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
+
 # Option B: manual
 mkdir "$env:USERPROFILE\bin" -Force
 Move-Item .\bakufu-windows-x86_64.exe "$env:USERPROFILE\bin\bakufu.exe"
@@ -54,3 +64,5 @@ bakufu getting-started
 - For private repos, authenticate first:
   - `gh auth login` (recommended), or
   - set `GITHUB_TOKEN` before running installers.
+- Install scripts verify downloaded binaries against release `SHA256SUMS.txt` before install.
+- If no release exists yet, installers will fail until a tagged release publishes assets.

@@ -2,11 +2,22 @@ import json
 import os
 from datetime import datetime, timezone
 import subprocess
+import urllib.parse
 from typing import Optional
 
 from .config import load_credentials, token_path_for_account
 
 TOKEN_SAFETY_SECONDS = 60
+
+
+def _is_truthy(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return False
 
 
 def _parse_expires(value: str):
@@ -51,32 +62,42 @@ def request_token(account: Optional[str] = None) -> dict:
     if not server or not username or not password:
         raise RuntimeError("Missing credentials. Set BAKUFU_SERVER/USER/PASS or credentials.json")
 
+    insecure = _is_truthy(creds.get("insecure")) or _is_truthy(os.getenv("BAKUFU_INSECURE"))
+    form_payload = urllib.parse.urlencode(
+        {
+            "grant_type": "password",
+            "username": username,
+            "password": password,
+        }
+    )
+
     cmd = [
         "curl",
-        "-k",
         "-s",
+        "--show-error",
         "--fail",
         "-X",
         "POST",
         f"{server}/api/oauth2/token",
         "-H",
         "Content-Type: application/x-www-form-urlencoded",
-        "-d",
-        "grant_type=password",
-        "-d",
-        f"username={username}",
-        "-d",
-        f"password={password}",
+        "--data-binary",
+        "@-",
     ]
+    if insecure:
+        cmd.insert(1, "-k")
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, input=form_payload, capture_output=True, text=True)
     if result.returncode != 0:
         detail = result.stderr.strip() or result.stdout.strip() or "Failed to obtain token"
         raise RuntimeError(detail)
 
     data = json.loads(result.stdout)
     token_path = token_path_for_account(account)
-    token_path.write_text(json.dumps(data, indent=2))
+    token_path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(str(token_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        json.dump(data, handle, indent=2)
     return data
 
 
