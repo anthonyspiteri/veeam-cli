@@ -47,6 +47,8 @@ python -m pip install -e .
 ## Quick Start
 
 ```bash
+bakufu getting-started
+bakufu getting-started --persona backup-admin
 bakufu auth setup lab --default
 bakufu auth token --refresh
 bakufu jobs list --pretty
@@ -67,6 +69,8 @@ For humans:
 - Avoid hand-written `curl` calls for common operations.
 - Discover available services and operations from Swagger.
 - Use `--dry-run` for request preview and `--page-all` for auto-pagination.
+- Pretty JSON is the default output; use `--raw` for compact JSON.
+- Use `--formatted table` for tabular rendering where possible.
 
 For AI agents:
 - Consistent JSON output for command and MCP tool calls.
@@ -169,6 +173,18 @@ Dry-run request preview:
 
 ```bash
 bakufu run Jobs GetAllJobs --params '{"limit": 5}' --dry-run
+```
+
+Raw output (compact JSON):
+
+```bash
+bakufu run Service GetServerTime --raw
+```
+
+Formatted output:
+
+```bash
+bakufu run Services GetAllServices --formatted table
 ```
 
 Pagination (NDJSON one page per line):
