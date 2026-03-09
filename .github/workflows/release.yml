@@ -73,7 +73,7 @@ jobs:
             --onefile \
             --paths src \
             --add-data "${{ matrix.add_data }}" \
-            src/bakufu_cli/cli.py
+            src/bakufu_cli/__main__.py
           mkdir -p release
           cp "${{ matrix.binary_path }}" "release/${{ matrix.asset_name }}"
 

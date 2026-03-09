@@ -150,4 +150,6 @@ else
 fi
 
 echo "Installed to ${INSTALL_DIR}/${BINARY_NAME}"
-"${INSTALL_DIR}/${BINARY_NAME}" version
+if ! "${INSTALL_DIR}/${BINARY_NAME}" version; then
+  echo "Warning: installed binary failed self-check. Reinstall from a newer release or build locally." >&2
+fi
