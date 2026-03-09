@@ -53,19 +53,19 @@ if command -v gh >/dev/null 2>&1; then
     --clobber
 else
   API_URL="https://api.github.com/repos/${OWNER}/${REPO}/releases/latest"
-  AUTH_HEADER=()
+  CURL_ARGS=(-fsSL)
   if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    AUTH_HEADER=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+    CURL_ARGS+=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
   fi
   ASSET_URL="$(
-    curl -fsSL "${AUTH_HEADER[@]}" "${API_URL}" \
+    curl "${CURL_ARGS[@]}" "${API_URL}" \
       | python3 -c "import sys, json; d=json.load(sys.stdin); assets=d.get('assets', []); n='${ASSET_NAME}'; print(next((a['browser_download_url'] for a in assets if a.get('name')==n), ''))"
   )"
   if [[ -z "${ASSET_URL}" ]]; then
     echo "Failed to resolve release asset ${ASSET_NAME}. For private repos, set GITHUB_TOKEN or use gh auth login." >&2
     exit 1
   fi
-  curl -fsSL "${AUTH_HEADER[@]}" -o "${TMP_DIR}/${ASSET_NAME}" "${ASSET_URL}"
+  curl "${CURL_ARGS[@]}" -o "${TMP_DIR}/${ASSET_NAME}" "${ASSET_URL}"
 fi
 
 chmod +x "${TMP_DIR}/${ASSET_NAME}"
