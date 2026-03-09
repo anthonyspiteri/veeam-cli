@@ -209,7 +209,7 @@ bakufu skills list
 `bakufu mcp` runs a stdio MCP server (Content-Length framed JSON-RPC), compatible with clients like Claude Desktop.
 
 ```bash
-bakufu mcp --services Jobs,Sessions --helpers --workflows
+bakufu mcp -s Jobs,Sessions -e -w
 ```
 
 Claude Desktop config example:
@@ -219,16 +219,16 @@ Claude Desktop config example:
   "mcpServers": {
     "bakufu": {
       "command": "bakufu",
-      "args": ["mcp", "--services", "Jobs,Sessions", "--helpers", "--workflows"]
+      "args": ["mcp", "-s", "Jobs,Sessions", "-e", "-w"]
     }
   }
 }
 ```
 
 Flags:
-- `--services <list|all>`: Comma-separated Swagger tags, or `all`
-- `--helpers`: Expose helper tools
-- `--workflows`: Expose workflow tools
+- `-s, --services <list|all>`: Comma-separated Swagger tags, or `all`
+- `-e, --helpers`: Expose helper tools
+- `-w, --workflows`: Expose workflow tools
 
 ## Advanced Usage
 

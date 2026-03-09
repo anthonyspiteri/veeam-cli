@@ -103,14 +103,19 @@ def build_tools(
                 }
             )
 
+    tools.sort(key=lambda t: t.get("name", ""))
     return tools
 
 
-def _handle_initialize(id_value: Any) -> Dict[str, Any]:
+def _handle_initialize(id_value: Any, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    requested = None
+    if isinstance(params, dict):
+        requested = params.get("protocolVersion")
+    protocol_version = requested or "2024-11-05"
     result = {
-        "protocolVersion": "2024-11-05",
+        "protocolVersion": protocol_version,
         "serverInfo": {"name": "bakufu-cli", "version": "0.1.0"},
-        "capabilities": {"tools": {}},
+        "capabilities": {"tools": {"listChanged": False}},
     }
     return _ok(id_value, result)
 
@@ -212,16 +217,36 @@ def serve(
     include_workflows: bool = False,
 ) -> None:
     spec = SwaggerSpec.load()
+    initialized = False
     while True:
         request = _read_message()
         if request is None:
             break
         method = request.get("method")
         id_value = request.get("id")
+        is_notification = "id" not in request
+        params = request.get("params")
 
         if method == "initialize":
-            _write_message(_handle_initialize(id_value))
-        elif method == "tools/list":
+            initialized = True
+            _write_message(_handle_initialize(id_value, params if isinstance(params, dict) else None))
+            continue
+
+        if method == "notifications/initialized":
+            # MCP notification: no response expected.
+            continue
+
+        if method == "ping":
+            if not is_notification:
+                _write_message(_ok(id_value, {}))
+            continue
+
+        if not initialized:
+            if not is_notification:
+                _write_message(_error(id_value, -32002, "Server not initialized"))
+            continue
+
+        if method == "tools/list":
             _write_message(
                 _handle_tools_list(id_value, spec, services, include_helpers, include_workflows)
             )
@@ -233,8 +258,9 @@ def serve(
                     services,
                     include_helpers,
                     include_workflows,
-                    request.get("params") or {},
+                    params if isinstance(params, dict) else {},
                 )
             )
         else:
-            _write_message(_error(id_value, -32601, "Method not found"))
+            if not is_notification:
+                _write_message(_error(id_value, -32601, "Method not found"))

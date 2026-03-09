@@ -396,7 +396,7 @@ def _completion_script_bash() -> str:
       ;;
     call) COMPREPLY=( $(compgen -W "--method --params --json --pretty --raw --formatted --refresh --dry-run --insecure -h --help" -- "$cur") ) ;;
     operations) COMPREPLY=( $(compgen -W "--tag -h --help" -- "$cur") ) ;;
-    mcp) COMPREPLY=( $(compgen -W "--services --helpers --workflows --insecure -h --help" -- "$cur") ) ;;
+    mcp) COMPREPLY=( $(compgen -W "-s --services -e --helpers -w --workflows --insecure -h --help" -- "$cur") ) ;;
     license)
       if [[ $COMP_CWORD -eq 2 ]]; then
         COMPREPLY=( $(compgen -W "show install-file" -- "$cur") )
@@ -437,6 +437,7 @@ _bakufu() {
         services) _values 'services command' list ;;
         skills) _values 'skills command' list ;;
         workflows) _values 'workflow' investigateFailedJob createWasabiRepo capacityReport runSecurityAnalyzer validateImmutability ;;
+        mcp) _values 'options' -s --services -e --helpers -w --workflows --insecure ;;
         run)
           if (( CURRENT == 3 )); then
             local -a _tags
@@ -865,6 +866,12 @@ def _render_table(payload: Any) -> Optional[str]:
     rows = None
     if isinstance(payload, dict) and isinstance(payload.get("data"), list):
         rows = payload.get("data")
+    elif isinstance(payload, dict) and isinstance(payload.get("items"), list):
+        rows = payload.get("items")
+    elif isinstance(payload, dict) and isinstance(payload.get("results"), list):
+        rows = payload.get("results")
+    elif isinstance(payload, dict) and isinstance(payload.get("rows"), list):
+        rows = payload.get("rows")
     elif isinstance(payload, list):
         rows = payload
     if not rows:
@@ -1070,9 +1077,9 @@ def build_parser():
     skills_list.set_defaults(func=cmd_skills_list)
 
     mcp = subparsers.add_parser("mcp", help="Start MCP server over stdio")
-    mcp.add_argument("--services", help="Comma-separated services to expose, or 'all'", default="all")
-    mcp.add_argument("--helpers", action="store_true")
-    mcp.add_argument("--workflows", action="store_true")
+    mcp.add_argument("-s", "--services", help="Comma-separated services to expose, or 'all'", default="all")
+    mcp.add_argument("-e", "--helpers", action="store_true", help="Expose helper tools")
+    mcp.add_argument("-w", "--workflows", action="store_true", help="Expose workflow tools")
     mcp.set_defaults(func=cmd_mcp)
 
     license_cmd = subparsers.add_parser("license", help="License operations")
