@@ -90,6 +90,11 @@ bakufu jobs list --pretty
 
 - Passwords with `!` in `zsh`: avoid inline passwords or wrap with single quotes.
 - Prefer interactive auth prompts for complex passwords.
+- One-step completion setup (macOS/Linux):
+
+```bash
+scripts/setup-completion.sh
+```
 
 ## Optional Environment Variables
 

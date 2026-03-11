@@ -61,6 +61,8 @@ bakufu getting-started
 - The binary includes a bundled Swagger schema in `schemas/` for dynamic command discovery.
 - Override schema path at runtime with:
   - `BAKUFU_SWAGGER_PATH=/path/to/swagger.json`
+- If you installed from a local clone, you can enable completion with:
+  - `scripts/setup-completion.sh`
 - For private repos, authenticate first:
   - `gh auth login` (recommended), or
   - set `GITHUB_TOKEN` before running installers.

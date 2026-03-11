@@ -297,6 +297,9 @@ bakufu license install-file /absolute/path/to/license.lic --pretty
 Shell completion:
 
 ```bash
+# one-step helper (auto-detects shell, writes completion file, updates rc):
+scripts/setup-completion.sh
+
 # bash
 bakufu completion bash > ~/.bakufu-completion.bash
 echo 'source ~/.bakufu-completion.bash' >> ~/.bashrc
