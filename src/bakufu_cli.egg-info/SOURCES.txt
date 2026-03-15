@@ -3,7 +3,6 @@
 README.md
 pyproject.toml
 swagger_v1.3.json
-.bakufu/accounts.json
 .github/workflows/ci.yml
 .github/workflows/release.yml
 docs/ARCHITECTURE.md
@@ -25,6 +24,7 @@ scripts/generate_skills.py
 scripts/install.ps1
 scripts/install.sh
 scripts/release.sh
+scripts/setup-completion.sh
 scripts/sync_skills_from_swagger.py
 skills/.DS_Store
 skills/skills.json
@@ -204,6 +204,7 @@ skills/recipe-weekly-job-health/SKILL.md
 skills/recipe-weekly-job-health/agents/openai.yaml
 src/.DS_Store
 src/bakufu_cli/__init__.py
+src/bakufu_cli/__main__.py
 src/bakufu_cli/accounts.py
 src/bakufu_cli/api.py
 src/bakufu_cli/auth_setup.py

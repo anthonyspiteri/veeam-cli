@@ -1,0 +1,3 @@
+display_name: "Persona Infrastructure Engineer"
+short_description: "Deploy and maintain proxies, managed servers, WAN accelerators, and backup components."
+default_prompt: "Use persona-infrastructure-engineer guidance to execute backup operations with concise status, risks, and next actions."

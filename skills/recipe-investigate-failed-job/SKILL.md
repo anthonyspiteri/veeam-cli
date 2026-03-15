@@ -9,27 +9,30 @@ metadata:
       bins:
         - "bakufu"
       skills:
-        - "bakufu-shared"
         - "bakufu-jobs"
         - "bakufu-sessions"
+        - "bakufu-session-logs"
+        - "bakufu-session-last-failed"
 ---
 # Recipe Investigate Failed Job
 
-PREREQUISITE: Load the following utility skills first: `bakufu-shared`, `bakufu-jobs`, `bakufu-sessions`
+PREREQUISITE: Load the following utility skills first: `bakufu-jobs`, `bakufu-sessions`, `bakufu-session-logs`, `bakufu-session-last-failed`
 
 Find the latest failed job session and collect logs.
 
 ## Relevant Commands
 
-- `bakufu workflows investigateFailedJob`
+- `bakufu workflows investigateFailedJob --job-name "<name>"`
 - `bakufu jobs list --pretty`
 - `bakufu sessions show <session-id> --pretty`
+- `bakufu sessions logs <session-id> --pretty`
 
 ## Instructions
-- Start with the highest-level workflow/command for this recipe.
-- Collect identifiers (job/session/repository) and keep them in every step.
-- Escalate to targeted `bakufu run` calls when additional detail is required.
+- Start with the investigateFailedJob workflow to get the latest failure context.
+- Pull session logs and filter to failed/warning tasks to isolate root cause.
+- Correlate task-level errors with infrastructure objects (proxy, repository, host).
+- Document job name, session ID, failure reason, and recommended action.
 
 ## Tips
-- Keep recipe outputs concise: status, evidence, and next action.
-- Store raw JSON artifacts for repeatability and auditing.
+- Check if the failure is recurring by comparing the last 3 session results.
+- Attach raw session log JSON as evidence when escalating.

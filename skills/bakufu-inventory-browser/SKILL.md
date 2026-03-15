@@ -1,7 +1,7 @@
 ---
 name: "bakufu-inventory-browser"
 version: "1.0.0"
-description: "The Inventory Browser section defines paths and operations that allow you to&#58; Retrieve virtualization servers and their virtual infrastructure objects (data centers, clusters, hosts, resource pools, vApps, VMs and so on). In this version, you can browse VMware vSphere, VMware Cloud Director and Microsoft Hyper-V objects. Manage computers, cloud machines, clusters and Active Directory objects with protection groups. Manage unstructured data sources. Manage Microsoft Entra ID tenants."
+description: "The Inventory Browser section defines paths and operations that allow you to&#58; Retrieve virtualization servers and their virtual infrastructure objects (data centers, clusters, hosts, resource pools, vApps, VMs and so on). In this version, you can browse VMware vSphere, VMware Cloud Director, and HyperV objects. Manage computers, cloud machines, clusters and Active Directory objects with protection groups. Manage unstructured data sources. Manage Microsoft Entra ID tenants."
 metadata:
   openclaw:
     category: "service"
@@ -15,7 +15,7 @@ metadata:
 
 PREREQUISITE: Load the following utility skills first: `bakufu-shared`
 
-The Inventory Browser section defines paths and operations that allow you to&#58; Retrieve virtualization servers and their virtual infrastructure objects (data centers, clusters, hosts, resource pools, vApps, VMs and so on). In this version, you can browse VMware vSphere, VMware Cloud Director and Microsoft Hyper-V objects. Manage computers, cloud machines, clusters and Active Directory objects with protection groups. Manage unstructured data sources. Manage Microsoft Entra ID tenants.
+The Inventory Browser section defines paths and operations that allow you to&#58; Retrieve virtualization servers and their virtual infrastructure objects (data centers, clusters, hosts, resource pools, vApps, VMs and so on). In this version, you can browse VMware vSphere, VMware Cloud Director, and HyperV objects. Manage computers, cloud machines, clusters and Active Directory objects with protection groups. Manage unstructured data sources. Manage Microsoft Entra ID tenants.
 
 ## Relevant Commands
 

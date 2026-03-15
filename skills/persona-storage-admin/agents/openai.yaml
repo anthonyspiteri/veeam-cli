@@ -1,0 +1,3 @@
+display_name: "Persona Storage Admin"
+short_description: "Manage SOBR, capacity tiers, object storage, and repository lifecycle."
+default_prompt: "Use persona-storage-admin guidance to execute backup operations with concise status, risks, and next actions."

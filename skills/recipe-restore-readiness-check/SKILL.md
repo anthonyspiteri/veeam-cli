@@ -9,26 +9,30 @@ metadata:
       bins:
         - "bakufu"
       skills:
-        - "bakufu-shared"
-        - "bakufu-jobs"
-        - "bakufu-sessions"
+        - "bakufu-restore"
+        - "bakufu-restore-points"
+        - "bakufu-mount-servers"
+        - "bakufu-repositories"
 ---
 # Recipe Restore Readiness Check
 
-PREREQUISITE: Load the following utility skills first: `bakufu-shared`, `bakufu-jobs`, `bakufu-sessions`
+PREREQUISITE: Load the following utility skills first: `bakufu-restore`, `bakufu-restore-points`, `bakufu-mount-servers`, `bakufu-repositories`
 
 Validate restore paths, mount servers, and key dependencies.
 
 ## Relevant Commands
 
-- `bakufu jobs list --pretty`
-- `bakufu sessions show <session-id> --pretty`
+- `bakufu run RestorePoints GetAllRestorePoints --pretty`
+- `bakufu run MountServers GetAllMountServers --pretty`
+- `bakufu run Repositories GetAllRepositories --pretty`
+- `bakufu run Restore GetRestoreSummary --pretty`
 
 ## Instructions
-- Start with the highest-level workflow/command for this recipe.
-- Collect identifiers (job/session/repository) and keep them in every step.
-- Escalate to targeted `bakufu run` calls when additional detail is required.
+- Verify restore points exist for critical workloads and are within SLA age.
+- Confirm mount servers are reachable and have sufficient temporary storage.
+- Check repository health and connectivity for each restore target.
+- Document any missing restore paths or unavailable dependencies as blockers.
 
 ## Tips
-- Keep recipe outputs concise: status, evidence, and next action.
-- Store raw JSON artifacts for repeatability and auditing.
+- Run readiness checks before DR test windows, not during.
+- Keep a known-good restore point inventory for rapid incident response.

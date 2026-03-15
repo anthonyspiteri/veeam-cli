@@ -9,26 +9,28 @@ metadata:
       bins:
         - "bakufu"
       skills:
-        - "bakufu-shared"
         - "bakufu-jobs"
         - "bakufu-sessions"
+        - "bakufu-jobs-last-result"
 ---
 # Recipe Daily Job Health
 
-PREREQUISITE: Load the following utility skills first: `bakufu-shared`, `bakufu-jobs`, `bakufu-sessions`
+PREREQUISITE: Load the following utility skills first: `bakufu-jobs`, `bakufu-sessions`, `bakufu-jobs-last-result`
 
 Summarize success, warning, and failed jobs in the last 24 hours.
 
 ## Relevant Commands
 
 - `bakufu jobs list --pretty`
-- `bakufu sessions show <session-id> --pretty`
+- `bakufu run Jobs GetAllJobsStates --pretty`
+- `bakufu run Sessions GetAllSessions --params '{"limit": 100}' --pretty`
 
 ## Instructions
-- Start with the highest-level workflow/command for this recipe.
-- Collect identifiers (job/session/repository) and keep them in every step.
-- Escalate to targeted `bakufu run` calls when additional detail is required.
+- List all jobs and their last result states to build the 24-hour summary.
+- Categorize jobs into success, warning, and failed buckets with counts.
+- Highlight any job that has not run in the expected window as potentially missed.
+- Include job names and session IDs for every non-success result.
 
 ## Tips
-- Keep recipe outputs concise: status, evidence, and next action.
-- Store raw JSON artifacts for repeatability and auditing.
+- Run at the same time each day for comparable trend data.
+- Flag jobs with warnings for 3+ consecutive days as escalation candidates.

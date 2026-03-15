@@ -1,7 +1,7 @@
 ---
 name: "bakufu-sessions"
 version: "1.0.0"
-description: "The Sessions section defines paths and operations for managing sessions (except [automation sessions](Automation#operation/GetAllAutomationSessions)) and task sessions performed on the backup server."
+description: "The Sessions section defines paths and operations for managing sessions (except [automation sessions](#/Automation/GetAllAutomationSessions)) and task sessions performed on the backup server."
 metadata:
   openclaw:
     category: "service"
@@ -15,7 +15,7 @@ metadata:
 
 PREREQUISITE: Load the following utility skills first: `bakufu-shared`
 
-The Sessions section defines paths and operations for managing sessions (except [automation sessions](Automation#operation/GetAllAutomationSessions)) and task sessions performed on the backup server.
+The Sessions section defines paths and operations for managing sessions (except [automation sessions](#/Automation/GetAllAutomationSessions)) and task sessions performed on the backup server.
 
 ## Relevant Commands
 
