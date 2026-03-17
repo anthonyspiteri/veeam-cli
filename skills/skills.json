@@ -429,6 +429,18 @@
     {
       "name": "recipe-wan-accelerator-review",
       "description": "List WAN accelerators and review cache configuration."
+    },
+    {
+      "name": "recipe-platform-inventory-browse",
+      "description": "Browse virtualization infrastructure hierarchy (vSphere, Hyper-V, Cloud Director) and list managed objects."
+    },
+    {
+      "name": "recipe-add-virtualization-server",
+      "description": "Add a vCenter, SCVMM, or Cloud Director server to the managed infrastructure."
+    },
+    {
+      "name": "recipe-repository-health-review",
+      "description": "Review repository connectivity, component versions, and capacity status."
     }
   ]
 }

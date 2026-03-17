@@ -73,10 +73,23 @@ def _sanitize(s: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_-]", "_", s)
 
 
+_MAX_TOOL_NAME_LENGTH = 64
+
+
 def _tool_name(tag: str, operation_id: str) -> str:
     # Use __ as the separator so we can unambiguously split even when the
     # sanitized tag contains underscores (e.g. "Active_Directory_Domains").
-    return f"{_sanitize(tag)}__{operation_id}"
+    name = f"{_sanitize(tag)}__{operation_id}"
+    if len(name) > _MAX_TOOL_NAME_LENGTH:
+        # Truncate the tag portion to fit; the operation_id is the unique part.
+        suffix = f"__{operation_id}"
+        max_tag_len = _MAX_TOOL_NAME_LENGTH - len(suffix)
+        if max_tag_len < 1:
+            # Operation ID alone exceeds limit — truncate the whole name.
+            name = name[:_MAX_TOOL_NAME_LENGTH]
+        else:
+            name = f"{_sanitize(tag)[:max_tag_len]}{suffix}"
+    return name
 
 
 def _build_swagger_input_schema(op: Operation) -> Dict[str, Any]:

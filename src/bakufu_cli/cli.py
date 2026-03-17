@@ -1078,8 +1078,10 @@ def build_parser():
 
     mcp = subparsers.add_parser("mcp", help="Start MCP server over stdio")
     mcp.add_argument("-s", "--services", help="Comma-separated services to expose, or 'all'", default="all")
-    mcp.add_argument("-e", "--helpers", action="store_true", help="Expose helper tools")
-    mcp.add_argument("-w", "--workflows", action="store_true", help="Expose workflow tools")
+    mcp.add_argument("-e", "--helpers", action="store_true", default=True, help="Expose helper tools (default: on)")
+    mcp.add_argument("--no-helpers", action="store_false", dest="helpers", help="Disable helper tools")
+    mcp.add_argument("-w", "--workflows", action="store_true", default=True, help="Expose workflow tools (default: on)")
+    mcp.add_argument("--no-workflows", action="store_false", dest="workflows", help="Disable workflow tools")
     mcp.set_defaults(func=cmd_mcp)
 
     license_cmd = subparsers.add_parser("license", help="License operations")
