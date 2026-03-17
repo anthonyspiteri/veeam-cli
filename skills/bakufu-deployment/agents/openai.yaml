@@ -1,3 +1,3 @@
 display_name: "Bakufu Deployment"
-short_description: "The Deployment section defines paths and operations for generating and downloading a deployment kit that is used for adding Microsoft Win..."
+short_description: "The Deployment section defines paths and operations for generating and downloading a deployment kit that is used for adding Windows machi..."
 default_prompt: "Use bakufu-deployment for Veeam API operations and return structured JSON."

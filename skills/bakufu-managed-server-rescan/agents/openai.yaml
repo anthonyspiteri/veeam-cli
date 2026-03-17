@@ -1,0 +1,3 @@
+display_name: "Bakufu Managed Server Rescan"
+short_description: "Rescan a managed server or all servers and return result state."
+default_prompt: "Use bakufu-managed-server-rescan to perform this backup task and return structured JSON."

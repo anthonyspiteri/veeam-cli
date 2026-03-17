@@ -1,0 +1,3 @@
+display_name: "Recipe Add Managed Server"
+short_description: "Add a vSphere, Hyper-V, Linux, or Windows server to managed infrastructure."
+default_prompt: "Run recipe-add-managed-server and summarize outcome with evidence and follow-up commands."

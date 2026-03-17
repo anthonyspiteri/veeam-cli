@@ -1,3 +1,3 @@
 display_name: "Bakufu Sessions"
-short_description: "The Sessions section defines paths and operations for managing sessions (except [automation sessions](Automation#operation/GetAllAutomati..."
+short_description: "The Sessions section defines paths and operations for managing sessions (except [automation sessions](#/Automation/GetAllAutomationSessio..."
 default_prompt: "Use bakufu-sessions for Veeam API operations and return structured JSON."

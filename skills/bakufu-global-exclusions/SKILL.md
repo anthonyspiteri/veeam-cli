@@ -1,7 +1,7 @@
 ---
 name: "bakufu-global-exclusions"
 version: "1.0.0"
-description: "The Global Exclusions section defines paths and operations for managing which VMs will be excluded from processing, even if they are included in jobs. In this version, you can use these operations for VMware vSphere, VMware Cloud Director and Microsoft Hyper-V VMs."
+description: "The Global Exclusions section defines paths and operations for managing which VMs will be excluded from processing, even if they are included in jobs. In this version, you can use these operations for VMware vSphere, VMware Cloud Director, and Microsoft Hyper-V VMs."
 metadata:
   openclaw:
     category: "service"
@@ -15,7 +15,7 @@ metadata:
 
 PREREQUISITE: Load the following utility skills first: `bakufu-shared`
 
-The Global Exclusions section defines paths and operations for managing which VMs will be excluded from processing, even if they are included in jobs. In this version, you can use these operations for VMware vSphere, VMware Cloud Director and Microsoft Hyper-V VMs.
+The Global Exclusions section defines paths and operations for managing which VMs will be excluded from processing, even if they are included in jobs. In this version, you can use these operations for VMware vSphere, VMware Cloud Director, and Microsoft Hyper-V VMs.
 
 ## Relevant Commands
 

@@ -1,7 +1,7 @@
 ---
 name: "bakufu-deployment"
 version: "1.0.0"
-description: "The Deployment section defines paths and operations for generating and downloading a deployment kit that is used for adding Microsoft Windows machines as managed servers."
+description: "The Deployment section defines paths and operations for generating and downloading a deployment kit that is used for adding Windows machines as managed servers."
 metadata:
   openclaw:
     category: "service"
@@ -15,7 +15,7 @@ metadata:
 
 PREREQUISITE: Load the following utility skills first: `bakufu-shared`
 
-The Deployment section defines paths and operations for generating and downloading a deployment kit that is used for adding Microsoft Windows machines as managed servers.
+The Deployment section defines paths and operations for generating and downloading a deployment kit that is used for adding Windows machines as managed servers.
 
 ## Relevant Commands
 

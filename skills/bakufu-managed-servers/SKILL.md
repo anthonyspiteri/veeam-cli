@@ -1,7 +1,7 @@
 ---
 name: "bakufu-managed-servers"
 version: "1.0.0"
-description: "The Managed Servers section defines paths and operations for managing servers. NOTE In this version, the REST API supports the following server types&#58; *VMware vSphere*, *Hyper-V*, *Linux* and *Windows*."
+description: "The Managed Servers section defines paths and operations for managing servers. NOTE In this version, the REST API supports the following server types&#58; *VMware vSphere*, Hyper-V, *Linux* and *Windows*."
 metadata:
   openclaw:
     category: "service"
@@ -15,7 +15,7 @@ metadata:
 
 PREREQUISITE: Load the following utility skills first: `bakufu-shared`
 
-The Managed Servers section defines paths and operations for managing servers. NOTE In this version, the REST API supports the following server types&#58; *VMware vSphere*, *Hyper-V*, *Linux* and *Windows*.
+The Managed Servers section defines paths and operations for managing servers. NOTE In this version, the REST API supports the following server types&#58; *VMware vSphere*, Hyper-V, *Linux* and *Windows*.
 
 ## Relevant Commands
 

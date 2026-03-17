@@ -9,26 +9,35 @@ metadata:
       bins:
         - "bakufu"
       skills:
-        - "bakufu-shared"
-        - "bakufu-jobs"
         - "bakufu-sessions"
+        - "bakufu-security"
+        - "bakufu-license"
+        - "bakufu-repositories"
+        - "bakufu-session-logs"
 ---
 # Recipe Auditor Monthly Pack
 
-PREREQUISITE: Load the following utility skills first: `bakufu-shared`, `bakufu-jobs`, `bakufu-sessions`
+PREREQUISITE: Load the following utility skills first: `bakufu-sessions`, `bakufu-security`, `bakufu-license`, `bakufu-repositories`, `bakufu-session-logs`
 
 Build a monthly compliance evidence pack for auditors.
 
 ## Relevant Commands
 
-- `bakufu jobs list --pretty`
-- `bakufu sessions show <session-id> --pretty`
+- `bakufu workflows capacityReport`
+- `bakufu workflows validateImmutability`
+- `bakufu run Security GetBestPracticesComplianceResult --pretty`
+- `bakufu run Security GetFourEyesAuthorizationEvents --pretty`
+- `bakufu run License GetLicense --pretty`
+- `bakufu run Sessions GetAllSessions --params '{"limit": 500}' --page-all --pretty`
 
 ## Instructions
-- Start with the highest-level workflow/command for this recipe.
-- Collect identifiers (job/session/repository) and keep them in every step.
-- Escalate to targeted `bakufu run` calls when additional detail is required.
+- Collect evidence from capacity, immutability, security, and license domains.
+- Export session history for the reporting period with all result states.
+- Gather four-eyes authorization events and best-practice compliance results.
+- Assemble all artifacts into a dated evidence pack with source timestamps.
+- Validate that every finding has a traceable session or object ID.
 
 ## Tips
-- Keep recipe outputs concise: status, evidence, and next action.
-- Store raw JSON artifacts for repeatability and auditing.
+- Use consistent date ranges across all evidence sources for the pack.
+- Separate raw JSON evidence from summarized findings for reviewer clarity.
+- Cross-check control evidence between sessions, security, and capacity outputs.

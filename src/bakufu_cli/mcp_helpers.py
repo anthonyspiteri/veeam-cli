@@ -110,6 +110,71 @@ def helper_object_storage_browse(args: dict) -> dict:
     return json.loads(resp["body"]) if resp.get("body") else {}
 
 
+def helper_proxy_states(args: dict) -> dict:
+    account = args.get("account")
+    resp = call_api("/api/v1/backupInfrastructure/proxies/states", pretty=False, account=account)
+    return json.loads(resp["body"]) if resp.get("body") else {}
+
+
+def helper_sobr_list(args: dict) -> dict:
+    account = args.get("account")
+    resp = call_api("/api/v1/backupInfrastructure/scaleOutRepositories", pretty=False, account=account)
+    return json.loads(resp["body"]) if resp.get("body") else {}
+
+
+def helper_managed_server_rescan(args: dict) -> dict:
+    server_id = args.get("serverId")
+    account = args.get("account")
+    if server_id:
+        resp = call_api(
+            f"/api/v1/backupInfrastructure/managedServers/{server_id}/rescan",
+            method="POST", data={}, pretty=False, account=account,
+        )
+    else:
+        resp = call_api(
+            "/api/v1/backupInfrastructure/managedServers/rescan",
+            method="POST", data={}, pretty=False, account=account,
+        )
+    return json.loads(resp["body"]) if resp.get("body") else {}
+
+
+def helper_job_create(args: dict) -> dict:
+    spec = args.get("spec")
+    if not spec:
+        raise ValueError("spec is required")
+    account = args.get("account")
+    resp = call_api("/api/v1/jobs", method="POST", data=spec, pretty=False, account=account)
+    return json.loads(resp["body"]) if resp.get("body") else {}
+
+
+def helper_job_schedule_update(args: dict) -> dict:
+    job_id = args.get("jobId")
+    if not job_id:
+        raise ValueError("jobId is required")
+    schedule = args.get("schedule")
+    if not schedule:
+        raise ValueError("schedule is required")
+    account = args.get("account")
+
+    get_resp = call_api(f"/api/v1/jobs/{job_id}", pretty=False, account=account)
+    job = json.loads(get_resp["body"]) if get_resp.get("body") else {}
+    job["schedule"] = schedule
+    if "storage" in args and args["storage"]:
+        job["storage"] = args["storage"]
+
+    put_resp = call_api(f"/api/v1/jobs/{job_id}", method="PUT", data=job, pretty=False, account=account)
+    return json.loads(put_resp["body"]) if put_resp.get("body") else {}
+
+
+def helper_malware_scan(args: dict) -> dict:
+    spec = args.get("spec")
+    if not spec:
+        raise ValueError("spec is required")
+    account = args.get("account")
+    resp = call_api("/api/v1/malwareDetection/scanBackup", method="POST", data=spec, pretty=False, account=account)
+    return json.loads(resp["body"]) if resp.get("body") else {}
+
+
 HELPERS = {
     "bakufu_jobs_startByName": {
         "description": "Start a backup job by name and return its session id.",
@@ -206,6 +271,75 @@ HELPERS = {
             "required": ["spec"],
         },
         "handler": helper_object_storage_browse,
+    },
+    "bakufu_proxies_states": {
+        "description": "Return backup proxy states and task slot utilization for all proxies.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+        },
+        "handler": helper_proxy_states,
+    },
+    "bakufu_sobr_list": {
+        "description": "List all scale-out backup repositories with performance and capacity tier details.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+        },
+        "handler": helper_sobr_list,
+    },
+    "bakufu_managedServers_rescan": {
+        "description": "Rescan a specific managed server or all managed servers to refresh component state.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "serverId": {"type": "string", "description": "Managed server UUID (omit to rescan all)"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+        },
+        "handler": helper_managed_server_rescan,
+    },
+    "bakufu_jobs_create": {
+        "description": "Create a new backup job from a full job specification object.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "spec": {"type": "object", "description": "Full job creation spec (use bakufu schema CreateJob)"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+            "required": ["spec"],
+        },
+        "handler": helper_job_create,
+    },
+    "bakufu_jobs_updateSchedule": {
+        "description": "Update a job schedule and optionally storage/retention settings. Fetches current config, merges schedule, and PUTs back.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "jobId": {"type": "string", "description": "Veeam job UUID"},
+                "schedule": {"type": "object", "description": "New schedule object to merge into the job config"},
+                "storage": {"type": "object", "description": "Optional updated storage/retention object"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+            "required": ["jobId", "schedule"],
+        },
+        "handler": helper_job_schedule_update,
+    },
+    "bakufu_malwareDetection_scan": {
+        "description": "Start a malware scan on backup objects using antivirus or YARA rules.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "spec": {"type": "object", "description": "Malware scan spec with target backup objects and scan method"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+            "required": ["spec"],
+        },
+        "handler": helper_malware_scan,
     },
 }
 

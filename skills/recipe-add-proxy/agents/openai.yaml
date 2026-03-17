@@ -1,0 +1,3 @@
+display_name: "Recipe Add Proxy"
+short_description: "Add a backup proxy to the infrastructure and configure task slots."
+default_prompt: "Run recipe-add-proxy and summarize outcome with evidence and follow-up commands."

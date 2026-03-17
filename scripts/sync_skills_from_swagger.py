@@ -179,6 +179,101 @@ helper_profiles = {
             'Use browse output to preflight automation specs.',
         ],
     },
+    'bakufu-proxy-states': {
+        'requires': ['bakufu-proxies'],
+        'commands': [
+            'bakufu run Proxies GetAllProxiesStates --pretty',
+            'bakufu run Proxies GetAllProxies --pretty',
+        ],
+        'instructions': [
+            'Use proxy states to assess operational readiness before scheduling intensive jobs.',
+            'Correlate proxy utilization with job throughput metrics.',
+            'Flag proxies that are disabled or unreachable for immediate attention.',
+        ],
+        'tips': [
+            'Include proxy health in daily infrastructure dashboards.',
+            'Use states data to right-size task slot allocations.',
+        ],
+    },
+    'bakufu-sobr-list': {
+        'requires': ['bakufu-repositories'],
+        'commands': [
+            'bakufu run Repositories GetAllScaleOutRepositories --pretty',
+        ],
+        'instructions': [
+            'Use SOBR listing to understand performance and capacity tier assignments.',
+            'Check extent states for maintenance or sealed mode entries.',
+            'Correlate SOBR configuration with capacity report data.',
+        ],
+        'tips': [
+            'Document SOBR tier topology changes in infrastructure runbooks.',
+            'Monitor extent count growth against licensing limits.',
+        ],
+    },
+    'bakufu-managed-server-rescan': {
+        'requires': ['bakufu-managed-servers', 'bakufu-sessions'],
+        'commands': [
+            'bakufu run ManagedServers RescanManagedServer --params \'{"id": "<server-id>"}\' --pretty',
+            'bakufu run ManagedServers RescanAllManagedServers --pretty',
+        ],
+        'instructions': [
+            'Trigger rescan after infrastructure changes (credentials, network, or component updates).',
+            'Follow the rescan session to terminal state and capture any warnings.',
+            'Use the all-server rescan for periodic infrastructure health checks.',
+        ],
+        'tips': [
+            'Schedule rescans during low-activity periods to avoid contention.',
+            'Capture rescan session IDs for component update tracking.',
+        ],
+    },
+    'bakufu-job-create': {
+        'requires': ['bakufu-jobs', 'bakufu-repositories', 'bakufu-inventory-browser'],
+        'commands': [
+            'bakufu run Jobs CreateJob --json @job-spec.json --pretty',
+            'bakufu schema CreateJob',
+        ],
+        'instructions': [
+            'Validate the job spec against the schema before submission.',
+            'Ensure referenced repository, credentials, and inventory objects exist.',
+            'Capture the returned job ID for downstream verification.',
+        ],
+        'tips': [
+            'Store job specs as versioned files for repeatable deployment.',
+            'Use schema command to discover required and optional fields.',
+        ],
+    },
+    'bakufu-job-schedule-update': {
+        'requires': ['bakufu-jobs'],
+        'commands': [
+            'bakufu run Jobs GetJob --params \'{"id": "<job-id>"}\' --pretty',
+            'bakufu run Jobs UpdateJob --params \'{"id": "<job-id>"}\' --json @patch.json --pretty',
+        ],
+        'instructions': [
+            'GET the current job configuration first; modify only schedule and retention fields.',
+            'Preserve all non-schedule fields in the PUT payload to avoid unintended changes.',
+            'Verify the next scheduled run time after update to confirm it took effect.',
+        ],
+        'tips': [
+            'Keep before/after JSON diffs for change audit trails.',
+            'Test schedule changes on a cloned job first when possible.',
+        ],
+    },
+    'bakufu-malware-scan': {
+        'requires': ['bakufu-malware-detection', 'bakufu-sessions'],
+        'commands': [
+            'bakufu run MalwareDetection ScanBackup --json @scan-spec.json --pretty',
+            'bakufu run MalwareDetection GetAllMalwareEvents --pretty',
+        ],
+        'instructions': [
+            'Specify target backup objects and scan method (antivirus or YARA) in the spec.',
+            'Follow the scan session to completion before reviewing events.',
+            'Capture all detected events with timestamps and object IDs.',
+        ],
+        'tips': [
+            'Run scans before restore operations from untrusted recovery points.',
+            'Retain scan evidence for incident response and compliance.',
+        ],
+    },
 }
 
 
@@ -207,8 +302,324 @@ recipe_workflow_map = {
     'recipe-validate-immutability': 'validateImmutability',
 }
 
+recipe_profiles = {
+    # -- Enriched existing recipes --
+    'recipe-investigate-failed-job': {
+        'requires': ['bakufu-jobs', 'bakufu-sessions', 'bakufu-session-logs', 'bakufu-session-last-failed'],
+        'commands': [
+            'bakufu workflows investigateFailedJob --job-name "<name>"',
+            'bakufu jobs list --pretty',
+            'bakufu sessions show <session-id> --pretty',
+            'bakufu sessions logs <session-id> --pretty',
+        ],
+        'instructions': [
+            'Start with the investigateFailedJob workflow to get the latest failure context.',
+            'Pull session logs and filter to failed/warning tasks to isolate root cause.',
+            'Correlate task-level errors with infrastructure objects (proxy, repository, host).',
+            'Document job name, session ID, failure reason, and recommended action.',
+        ],
+        'tips': [
+            'Check if the failure is recurring by comparing the last 3 session results.',
+            'Attach raw session log JSON as evidence when escalating.',
+        ],
+    },
+    'recipe-daily-job-health': {
+        'requires': ['bakufu-jobs', 'bakufu-sessions', 'bakufu-jobs-last-result'],
+        'commands': [
+            'bakufu jobs list --pretty',
+            'bakufu run Jobs GetAllJobsStates --pretty',
+            'bakufu run Sessions GetAllSessions --params \'{"limit": 100}\' --pretty',
+        ],
+        'instructions': [
+            'List all jobs and their last result states to build the 24-hour summary.',
+            'Categorize jobs into success, warning, and failed buckets with counts.',
+            'Highlight any job that has not run in the expected window as potentially missed.',
+            'Include job names and session IDs for every non-success result.',
+        ],
+        'tips': [
+            'Run at the same time each day for comparable trend data.',
+            'Flag jobs with warnings for 3+ consecutive days as escalation candidates.',
+        ],
+    },
+    'recipe-restore-readiness-check': {
+        'requires': ['bakufu-restore', 'bakufu-restore-points', 'bakufu-mount-servers', 'bakufu-repositories'],
+        'commands': [
+            'bakufu run RestorePoints GetAllRestorePoints --pretty',
+            'bakufu run MountServers GetAllMountServers --pretty',
+            'bakufu run Repositories GetAllRepositories --pretty',
+            'bakufu run Restore GetRestoreSummary --pretty',
+        ],
+        'instructions': [
+            'Verify restore points exist for critical workloads and are within SLA age.',
+            'Confirm mount servers are reachable and have sufficient temporary storage.',
+            'Check repository health and connectivity for each restore target.',
+            'Document any missing restore paths or unavailable dependencies as blockers.',
+        ],
+        'tips': [
+            'Run readiness checks before DR test windows, not during.',
+            'Keep a known-good restore point inventory for rapid incident response.',
+        ],
+    },
+    'recipe-create-wasabi-repo': {
+        'requires': ['bakufu-repositories', 'bakufu-cloud-browser', 'bakufu-cloud-credentials-add', 'bakufu-object-storage-browse'],
+        'commands': [
+            'bakufu workflows createWasabiRepo --spec @repo.json',
+            'bakufu call /api/v1/cloudBrowser --method POST --json @browse.json --pretty',
+            'bakufu run Repositories GetAllRepositories --pretty',
+        ],
+        'instructions': [
+            'Create or verify cloud credentials before repository creation.',
+            'Browse the target bucket and folder to confirm path accessibility.',
+            'Run the createWasabiRepo workflow with a validated spec file.',
+            'Verify the new repository appears healthy in the repository list after creation.',
+        ],
+        'tips': [
+            'Keep repository specs as versioned JSON files for repeatable provisioning.',
+            'Validate immutability and retention settings align with policy before creation.',
+        ],
+    },
+    'recipe-auditor-monthly-pack': {
+        'requires': ['bakufu-sessions', 'bakufu-security', 'bakufu-license', 'bakufu-repositories', 'bakufu-session-logs'],
+        'commands': [
+            'bakufu workflows capacityReport',
+            'bakufu workflows validateImmutability',
+            'bakufu run Security GetBestPracticesComplianceResult --pretty',
+            'bakufu run Security GetFourEyesAuthorizationEvents --pretty',
+            'bakufu run License GetLicense --pretty',
+            'bakufu run Sessions GetAllSessions --params \'{"limit": 500}\' --page-all --pretty',
+        ],
+        'instructions': [
+            'Collect evidence from capacity, immutability, security, and license domains.',
+            'Export session history for the reporting period with all result states.',
+            'Gather four-eyes authorization events and best-practice compliance results.',
+            'Assemble all artifacts into a dated evidence pack with source timestamps.',
+            'Validate that every finding has a traceable session or object ID.',
+        ],
+        'tips': [
+            'Use consistent date ranges across all evidence sources for the pack.',
+            'Separate raw JSON evidence from summarized findings for reviewer clarity.',
+            'Cross-check control evidence between sessions, security, and capacity outputs.',
+        ],
+    },
+    # -- New write-operation recipes --
+    'recipe-create-backup-job': {
+        'requires': ['bakufu-jobs', 'bakufu-repositories', 'bakufu-inventory-browser'],
+        'commands': [
+            'bakufu schema CreateJob',
+            'bakufu run InventoryBrowser GetVirtualInfrastructure --pretty',
+            'bakufu run Repositories GetAllRepositories --pretty',
+            'bakufu run Jobs CreateJob --json @job-spec.json --pretty',
+            'bakufu run Jobs GetJob --params \'{"id": "<job-id>"}\' --pretty',
+        ],
+        'instructions': [
+            'Use `bakufu schema CreateJob` to discover required and optional fields before building the spec.',
+            'Browse inventory to resolve VM, container, or tag object IDs for the job source.',
+            'Validate that the target repository exists and has sufficient capacity.',
+            'Submit the job spec and capture the returned job ID.',
+            'Immediately GET the created job to confirm all settings were applied correctly.',
+        ],
+        'tips': [
+            'Store job specs as versioned JSON files for repeatable deployment.',
+            'Test with a single VM before scaling to full workload sets.',
+            'Verify guest processing credentials if application-aware processing is enabled.',
+        ],
+    },
+    'recipe-modify-job-schedule': {
+        'requires': ['bakufu-jobs', 'bakufu-job-by-name'],
+        'commands': [
+            'bakufu jobs list --pretty',
+            'bakufu run Jobs GetJob --params \'{"id": "<job-id>"}\' --pretty',
+            'bakufu run Jobs UpdateJob --params \'{"id": "<job-id>"}\' --json @schedule-patch.json --pretty',
+        ],
+        'instructions': [
+            'Resolve the job by name or ID first, then GET its current full configuration.',
+            'Modify only the schedule and retention fields; preserve all other job settings in the PUT payload.',
+            'Validate the updated schedule does not conflict with other jobs in the same backup window.',
+            'Capture before and after JSON snapshots for change audit trails.',
+            'Verify the next scheduled run time after update to confirm it took effect.',
+        ],
+        'tips': [
+            'Use job clone as a safer alternative to test schedule changes on a copy first.',
+            'Keep before/after JSON diffs in change management records.',
+        ],
+    },
+    'recipe-add-repository': {
+        'requires': ['bakufu-repositories', 'bakufu-managed-servers', 'bakufu-credentials'],
+        'commands': [
+            'bakufu schema CreateRepository',
+            'bakufu run ManagedServers GetAllManagedServers --pretty',
+            'bakufu run Repositories CreateRepository --json @repo-spec.json --pretty',
+            'bakufu run Repositories GetAllRepositories --pretty',
+        ],
+        'instructions': [
+            'Ensure the target managed server is added and reachable before repository creation.',
+            'Use the schema command to validate required fields in the repository spec.',
+            'For object storage repos, use cloud browser to preflight bucket/folder paths first.',
+            'Run repository rescan after creation to confirm health status.',
+        ],
+        'tips': [
+            'Set max concurrent tasks based on storage throughput capacity.',
+            'Enable per-VM backup files for better restore granularity where supported.',
+        ],
+    },
+    'recipe-add-proxy': {
+        'requires': ['bakufu-proxies', 'bakufu-managed-servers', 'bakufu-credentials'],
+        'commands': [
+            'bakufu schema CreateProxy',
+            'bakufu run ManagedServers GetAllManagedServers --pretty',
+            'bakufu run Proxies CreateProxy --json @proxy-spec.json --pretty',
+            'bakufu run Proxies GetAllProxiesStates --pretty',
+        ],
+        'instructions': [
+            'Verify the managed server is added and its components are up to date before proxy creation.',
+            'Use the schema command to discover transport mode and task-slot options.',
+            'Set transport mode and task slots appropriate for the target workload type.',
+            'Confirm proxy state transitions to healthy after creation.',
+        ],
+        'tips': [
+            'Deploy proxies close to source datastores for optimal transport performance.',
+            'Use proxy states endpoint to verify operational readiness post-deploy.',
+        ],
+    },
+    'recipe-add-managed-server': {
+        'requires': ['bakufu-managed-servers', 'bakufu-credentials', 'bakufu-connection'],
+        'commands': [
+            'bakufu schema CreateManagedServer',
+            'bakufu run Connection GetConnectionCertificate --params \'{"host": "<server>"}\' --pretty',
+            'bakufu run ManagedServers CreateManagedServer --json @server-spec.json --pretty',
+            'bakufu run ManagedServers GetAllManagedServers --pretty',
+        ],
+        'instructions': [
+            'Retrieve the TLS certificate or SSH fingerprint first and include it in the spec for trust.',
+            'Resolve or create credentials before referencing them in the server spec.',
+            'Verify the server type matches the actual platform (vSphere, HyperV, Linux, Windows).',
+            'Run rescan after adding to confirm component deployment completed.',
+        ],
+        'tips': [
+            'Use dedicated credentials for hardened Linux repositories.',
+            'Document server additions with their credential IDs for rotation tracking.',
+        ],
+    },
+    'recipe-clone-job': {
+        'requires': ['bakufu-jobs', 'bakufu-job-by-name'],
+        'commands': [
+            'bakufu jobs list --pretty',
+            'bakufu run Jobs CloneJob --params \'{"id": "<job-id>"}\' --pretty',
+            'bakufu run Jobs GetJob --params \'{"id": "<cloned-job-id>"}\' --pretty',
+        ],
+        'instructions': [
+            'Resolve the source job by name or ID before cloning.',
+            'Capture the returned cloned job ID and verify its full configuration.',
+            'Disable the cloned job schedule immediately if this is for testing only.',
+            'Rename or annotate the clone to distinguish it from the original.',
+        ],
+        'tips': [
+            'Use clone to safely test schedule, retention, or target changes before modifying production.',
+            'Delete test clones promptly to avoid accidental production runs.',
+        ],
+    },
+    # -- SureBackup and verification recipes --
+    'recipe-surebackup-verify': {
+        'requires': ['bakufu-jobs', 'bakufu-sessions', 'bakufu-session-follow'],
+        'commands': [
+            'bakufu jobs list --pretty',
+            'bakufu run Jobs StartJob --params \'{"id": "<surebackup-job-id>"}\' --pretty',
+            'bakufu sessions show <session-id> --pretty',
+            'bakufu sessions logs <session-id> --pretty',
+        ],
+        'instructions': [
+            'Identify existing SureBackupContentScan jobs or create one for the target backups.',
+            'Start the SureBackup job and capture the returned session ID.',
+            'Follow the session to terminal state and capture verification results.',
+            'Correlate verification failures with specific backup objects and restore points.',
+            'Note: SureBackup is currently supported for Azure, AWS, and GCP cloud backups only.',
+        ],
+        'tips': [
+            'Schedule SureBackup jobs after primary backup windows complete.',
+            'Track verification pass rates over time as a recoverability confidence metric.',
+            'Retain SureBackup session logs as recovery readiness evidence.',
+        ],
+    },
+    'recipe-malware-scan-verify': {
+        'requires': ['bakufu-malware-detection', 'bakufu-sessions', 'bakufu-session-follow'],
+        'commands': [
+            'bakufu run MalwareDetection ScanBackup --json @scan-spec.json --pretty',
+            'bakufu run MalwareDetection GetAllMalwareEvents --pretty',
+            'bakufu run MalwareDetection GetYaraRules --pretty',
+            'bakufu sessions show <session-id> --pretty',
+        ],
+        'instructions': [
+            'Identify target backup objects and restore points before initiating the scan.',
+            'Start the malware scan and follow the resulting session to completion.',
+            'Review malware events after scan completes for any detected threats.',
+            'Cross-reference detected events with backup objects to assess contamination scope.',
+            'Document clean scan results as evidence for restore confidence.',
+        ],
+        'tips': [
+            'Run malware scans before performing restores from untrusted recovery points.',
+            'Keep YARA rule sets updated and document any custom rule additions.',
+            'Retain scan results as part of incident response evidence chain.',
+        ],
+    },
+    # -- SOBR and infrastructure recipes --
+    'recipe-sobr-tier-health': {
+        'requires': ['bakufu-repositories', 'bakufu-repo-capacity', 'bakufu-sobr-list'],
+        'commands': [
+            'bakufu run Repositories GetAllScaleOutRepositories --pretty',
+            'bakufu workflows capacityReport',
+            'bakufu run Repositories GetAllRepositoriesStates --pretty',
+        ],
+        'instructions': [
+            'List all SOBRs and their extent configurations first.',
+            'Check for extents in maintenance or sealed mode that may block offload.',
+            'Correlate performance tier capacity with capacity tier offload schedules.',
+            'Flag any SOBR with no capacity tier configured as a gap.',
+        ],
+        'tips': [
+            'Include SOBR tier health in weekly storage administration reviews.',
+            'Track offload progress over time to detect stalled transfers.',
+        ],
+    },
+    'recipe-server-rescan': {
+        'requires': ['bakufu-managed-servers', 'bakufu-sessions', 'bakufu-managed-server-rescan'],
+        'commands': [
+            'bakufu run ManagedServers GetAllManagedServers --pretty',
+            'bakufu run ManagedServers RescanManagedServer --params \'{"id": "<server-id>"}\' --pretty',
+            'bakufu sessions show <session-id> --pretty',
+        ],
+        'instructions': [
+            'List managed servers and identify targets requiring rescan.',
+            'Trigger rescan for specific servers or use the all-server rescan endpoint.',
+            'Follow the rescan session and capture any component version mismatches.',
+            'Flag servers with unavailable or error states for immediate investigation.',
+        ],
+        'tips': [
+            'Run after Veeam version upgrades to detect component drift across servers.',
+            'Document rescan outcomes in infrastructure change logs.',
+        ],
+    },
+    'recipe-wan-accelerator-review': {
+        'requires': ['bakufu-wan-accelerators'],
+        'commands': [
+            'bakufu run WANAccelerators GetAllWanAccelerators --pretty',
+        ],
+        'instructions': [
+            'List all WAN accelerators and verify cache folder and size settings.',
+            'Correlate WAN accelerator configuration with active backup copy jobs.',
+            'Flag accelerators on servers with low disk space as capacity risks.',
+            'Note: WAN accelerator management is read-only in this API version.',
+        ],
+        'tips': [
+            'Keep WAN accelerator configuration review in quarterly infrastructure audits.',
+            'Monitor cache utilization trends for capacity planning.',
+        ],
+    },
+}
+
 
 def _recipe_profile(name: str) -> dict:
+    if name in recipe_profiles:
+        return recipe_profiles[name]
     workflow = recipe_workflow_map.get(name)
     commands = ['bakufu jobs list --pretty', 'bakufu sessions show <session-id> --pretty']
     if workflow:
@@ -265,6 +676,12 @@ helpers = [
     {'name': 'bakufu-session-last-failed', 'description': 'Find the most recent failed session for a job.'},
     {'name': 'bakufu-repo-immutability-summary', 'description': 'Summarize immutability settings across repositories.'},
     {'name': 'bakufu-security-analyzer-last-run', 'description': 'Get the latest Security Analyzer run state and findings.'},
+    {'name': 'bakufu-proxy-states', 'description': 'Get backup proxy states and task slot utilization.'},
+    {'name': 'bakufu-sobr-list', 'description': 'List scale-out backup repositories with tier details.'},
+    {'name': 'bakufu-managed-server-rescan', 'description': 'Rescan a managed server or all servers and return result state.'},
+    {'name': 'bakufu-job-create', 'description': 'Create a new backup job from a JSON spec.'},
+    {'name': 'bakufu-job-schedule-update', 'description': 'Update a job schedule and retention policy.'},
+    {'name': 'bakufu-malware-scan', 'description': 'Start a malware scan on backup objects.'},
 ]
 
 personas = [
@@ -273,6 +690,8 @@ personas = [
     {'name': 'persona-security-admin', 'description': 'Operate security analyzer, malware detection, and hardening controls.'},
     {'name': 'persona-dr-operator', 'description': 'Validate restore readiness and execute DR runbooks.'},
     {'name': 'persona-auditor', 'description': 'Collect compliance evidence and produce operational audit summaries.'},
+    {'name': 'persona-storage-admin', 'description': 'Manage SOBR, capacity tiers, object storage, and repository lifecycle.'},
+    {'name': 'persona-infrastructure-engineer', 'description': 'Deploy and maintain proxies, managed servers, WAN accelerators, and backup components.'},
 ]
 
 recipes = [
@@ -306,6 +725,17 @@ recipes = [
     {'name': 'recipe-encryption-posture', 'description': 'Review encryption and KMS configuration coverage.'},
     {'name': 'recipe-traffic-rules-review', 'description': 'Capture network traffic rule configuration for operations review.'},
     {'name': 'recipe-auditor-monthly-pack', 'description': 'Build a monthly compliance evidence pack for auditors.'},
+    {'name': 'recipe-create-backup-job', 'description': 'Create a new backup job with VMs, repository, and schedule.'},
+    {'name': 'recipe-modify-job-schedule', 'description': 'Update an existing job schedule and retention settings.'},
+    {'name': 'recipe-add-repository', 'description': 'Add a new backup repository to the infrastructure.'},
+    {'name': 'recipe-add-proxy', 'description': 'Add a backup proxy to the infrastructure and configure task slots.'},
+    {'name': 'recipe-add-managed-server', 'description': 'Add a vSphere, Hyper-V, Linux, or Windows server to managed infrastructure.'},
+    {'name': 'recipe-clone-job', 'description': 'Clone an existing backup job for testing or migration.'},
+    {'name': 'recipe-surebackup-verify', 'description': 'Run SureBackup verification scan on backups and track completion.'},
+    {'name': 'recipe-malware-scan-verify', 'description': 'Scan backups for malware using antivirus or YARA rules and review results.'},
+    {'name': 'recipe-sobr-tier-health', 'description': 'Review SOBR extent states, capacity tier offload, and maintenance mode.'},
+    {'name': 'recipe-server-rescan', 'description': 'Rescan managed servers and validate component versions.'},
+    {'name': 'recipe-wan-accelerator-review', 'description': 'List WAN accelerators and review cache configuration.'},
 ]
 
 catalog = {
@@ -504,6 +934,89 @@ persona_profiles = {
             'Keep raw JSON artifacts attached to summary reports for verification.',
             'Cross-check control evidence between sessions, logs, and security analyzer outputs.',
             'Separate observations from recommendations to keep reports objective.',
+        ],
+    },
+    'persona-storage-admin': {
+        'title': 'Storage Admin',
+        'mission': 'Own storage tier strategy, SOBR configuration, capacity lifecycle, and object storage health.',
+        'requires': [
+            'bakufu-repositories',
+            'bakufu-cloud-browser',
+            'bakufu-repo-capacity',
+            'bakufu-repo-add-wasabi',
+            'bakufu-object-storage-browse',
+            'bakufu-cloud-credentials-add',
+            'bakufu-sobr-list',
+        ],
+        'focus': [
+            'Scale-out backup repository (SOBR) performance and capacity tier configuration',
+            'Object storage onboarding, immutability, and cloud tier lifecycle',
+            'Repository capacity monitoring, thresholds, and growth trends',
+        ],
+        'workflows': [
+            'capacityReport',
+            'validateImmutability',
+            'createWasabiRepo',
+        ],
+        'recipes': [
+            'recipe-capacity-report',
+            'recipe-validate-immutability',
+            'recipe-create-wasabi-repo',
+            'recipe-repository-online-check',
+            'recipe-repository-rescan',
+            'recipe-sobr-tier-health',
+            'recipe-add-repository',
+        ],
+        'instructions': [
+            'Start with SOBR and capacity tier health before onboarding new object storage.',
+            'Validate immutability and retention alignment before assigning repositories to jobs.',
+            'Monitor performance tier free space alongside capacity tier offload status.',
+            'Use cloud browser to preflight bucket and folder paths before repository creation.',
+        ],
+        'tips': [
+            'Keep SOBR extent states in weekly reports alongside capacity trends.',
+            'Track object storage credential rotation schedules per repository.',
+            'Document tier configuration changes with before/after JSON snapshots.',
+        ],
+    },
+    'persona-infrastructure-engineer': {
+        'title': 'Infrastructure Engineer',
+        'mission': 'Deploy, maintain, and optimize backup infrastructure components including proxies, servers, and transport.',
+        'requires': [
+            'bakufu-proxies',
+            'bakufu-managed-servers',
+            'bakufu-wan-accelerators',
+            'bakufu-mount-servers',
+            'bakufu-deployment',
+            'bakufu-proxy-states',
+            'bakufu-managed-server-rescan',
+        ],
+        'focus': [
+            'Proxy deployment, capacity, and task-slot optimization',
+            'Managed server lifecycle, rescans, and component updates',
+            'WAN accelerator configuration and cache management',
+        ],
+        'workflows': [
+            'capacityReport',
+        ],
+        'recipes': [
+            'recipe-proxy-health-review',
+            'recipe-managed-server-health',
+            'recipe-add-proxy',
+            'recipe-add-managed-server',
+            'recipe-server-rescan',
+            'recipe-wan-accelerator-review',
+        ],
+        'instructions': [
+            'Validate managed server connectivity and component versions before adding proxies.',
+            'Use server rescan to detect drift in component versions and server availability.',
+            'Review proxy task-slot configuration against concurrent workload peaks.',
+            'Check WAN accelerator cache health before enabling remote copy jobs.',
+        ],
+        'tips': [
+            'Track proxy utilization patterns to right-size task slots.',
+            'Document all server additions with credential IDs and connection fingerprints.',
+            'Run component updates during maintenance windows with session follow-up.',
         ],
     },
 }
