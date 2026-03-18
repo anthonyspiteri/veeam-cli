@@ -1,0 +1,3 @@
+display_name: "Recipe Add Virtualization Server"
+short_description: "Add a vCenter, SCVMM, or Cloud Director server to the managed infrastructure."
+default_prompt: "Run recipe-add-virtualization-server and summarize outcome with evidence and follow-up commands."

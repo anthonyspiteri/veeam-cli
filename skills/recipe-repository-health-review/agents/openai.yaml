@@ -1,0 +1,3 @@
+display_name: "Recipe Repository Health Review"
+short_description: "Review repository connectivity, component versions, and capacity status."
+default_prompt: "Run recipe-repository-health-review and summarize outcome with evidence and follow-up commands."

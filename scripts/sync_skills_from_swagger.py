@@ -614,6 +614,67 @@ recipe_profiles = {
             'Monitor cache utilization trends for capacity planning.',
         ],
     },
+    'recipe-platform-inventory-browse': {
+        'requires': ['bakufu-inventory-browser', 'bakufu-managed-servers'],
+        'commands': [
+            'bakufu run InventoryBrowser GetVirtualInfrastructure --pretty',
+            'bakufu run InventoryBrowser GetVmwareHosts --params \'{"hostId": "<host-id>"}\' --pretty',
+            'bakufu run ManagedServers GetAllManagedServers --pretty',
+        ],
+        'instructions': [
+            'List all virtualization servers to identify vSphere, Hyper-V, and Cloud Director platforms.',
+            'Drill into each platform to enumerate datacenters, clusters, hosts, and VMs.',
+            'Cross-reference inventory objects with managed server entries to verify connectivity.',
+            'Use inventory browsing to validate VM object IDs before assigning them to backup jobs.',
+            'Note: Inventory browsing covers vSphere, Hyper-V, and Cloud Director. Nutanix AHV, Proxmox, and KVM workloads appear in license data but are not browsable via the REST API.',
+        ],
+        'tips': [
+            'Run inventory browsing after adding or rescanning virtualization servers to confirm discovery.',
+            'Use inventory hierarchy to plan scope for new backup jobs by cluster or resource pool.',
+            'Compare inventory object counts across runs to detect VM sprawl or decommissions.',
+        ],
+    },
+    'recipe-add-virtualization-server': {
+        'requires': ['bakufu-managed-servers', 'bakufu-inventory-browser', 'bakufu-managed-server-rescan'],
+        'commands': [
+            'bakufu schema CreateManagedServer',
+            'bakufu run ManagedServers CreateManagedServer --json @server-spec.json --pretty',
+            'bakufu run ManagedServers GetManagedServer --params \'{"id": "<server-id>"}\' --pretty',
+            'bakufu run InventoryBrowser GetVirtualInfrastructure --pretty',
+        ],
+        'instructions': [
+            'Use `bakufu schema CreateManagedServer` to discover required fields (hostname, credentials, type).',
+            'Specify the server type: vCenter for vSphere, SCVMM for Hyper-V, or Cloud Director.',
+            'Submit the server spec and capture the returned managed server ID.',
+            'Immediately GET the server to confirm connection state and component version.',
+            'Run inventory browse to verify that the platform hierarchy is now discoverable.',
+            'Trigger a rescan if initial discovery returns incomplete results.',
+            'Note: The REST API currently supports vSphere, Hyper-V, and Cloud Director. Nutanix AHV, Proxmox, and KVM are licensed platforms but managed via console/PowerShell, not the REST API.',
+        ],
+        'tips': [
+            'Pre-validate credentials and network reachability before submitting the server spec.',
+            'Document each platform addition with server ID, type, and credential reference.',
+            'Schedule periodic rescans after adding new platforms to keep inventory current.',
+        ],
+    },
+    'recipe-repository-health-review': {
+        'requires': ['bakufu-repositories', 'bakufu-repo-capacity'],
+        'commands': [
+            'bakufu run Repositories GetAllRepositories --pretty',
+            'bakufu workflows capacityReport',
+        ],
+        'instructions': [
+            'List all repositories and verify online/offline status.',
+            'Check repository component versions and flag any that are out of date.',
+            'Review capacity utilization and free space against defined thresholds.',
+            'Identify repositories approaching capacity limits for proactive expansion.',
+        ],
+        'tips': [
+            'Include repository health in weekly infrastructure review alongside proxy status.',
+            'Track capacity trends over time to predict when expansion is needed.',
+            'Correlate repository connectivity issues with managed server health.',
+        ],
+    },
 }
 
 
@@ -736,6 +797,9 @@ recipes = [
     {'name': 'recipe-sobr-tier-health', 'description': 'Review SOBR extent states, capacity tier offload, and maintenance mode.'},
     {'name': 'recipe-server-rescan', 'description': 'Rescan managed servers and validate component versions.'},
     {'name': 'recipe-wan-accelerator-review', 'description': 'List WAN accelerators and review cache configuration.'},
+    {'name': 'recipe-platform-inventory-browse', 'description': 'Browse virtualization infrastructure hierarchy (vSphere, Hyper-V, Cloud Director) and list managed objects.'},
+    {'name': 'recipe-add-virtualization-server', 'description': 'Add a vCenter, SCVMM, or Cloud Director server to the managed infrastructure.'},
+    {'name': 'recipe-repository-health-review', 'description': 'Review repository connectivity, component versions, and capacity status.'},
 ]
 
 catalog = {
@@ -981,7 +1045,7 @@ persona_profiles = {
     },
     'persona-infrastructure-engineer': {
         'title': 'Infrastructure Engineer',
-        'mission': 'Deploy, maintain, and optimize backup infrastructure components including proxies, servers, and transport.',
+        'mission': 'Deploy, maintain, and optimize backup infrastructure including proxies, servers, repositories, virtualization platforms, and transport.',
         'requires': [
             'bakufu-proxies',
             'bakufu-managed-servers',
@@ -990,11 +1054,16 @@ persona_profiles = {
             'bakufu-deployment',
             'bakufu-proxy-states',
             'bakufu-managed-server-rescan',
+            'bakufu-repositories',
+            'bakufu-repo-capacity',
+            'bakufu-inventory-browser',
         ],
         'focus': [
             'Proxy deployment, capacity, and task-slot optimization',
             'Managed server lifecycle, rescans, and component updates',
             'WAN accelerator configuration and cache management',
+            'Repository connectivity, capacity monitoring, and provisioning',
+            'Virtualization platform onboarding (vSphere, Hyper-V, Cloud Director) and inventory browsing',
         ],
         'workflows': [
             'capacityReport',
@@ -1006,17 +1075,25 @@ persona_profiles = {
             'recipe-add-managed-server',
             'recipe-server-rescan',
             'recipe-wan-accelerator-review',
+            'recipe-platform-inventory-browse',
+            'recipe-add-virtualization-server',
+            'recipe-repository-health-review',
+            'recipe-add-repository',
         ],
         'instructions': [
             'Validate managed server connectivity and component versions before adding proxies.',
             'Use server rescan to detect drift in component versions and server availability.',
             'Review proxy task-slot configuration against concurrent workload peaks.',
             'Check WAN accelerator cache health before enabling remote copy jobs.',
+            'Browse platform inventory after adding virtualization servers to confirm discovery.',
+            'Monitor repository capacity and connectivity as part of infrastructure health reviews.',
+            'Note: REST API covers vSphere, Hyper-V, and Cloud Director. Nutanix AHV, Proxmox, and KVM are Veeam-licensed but require console/PowerShell for management.',
         ],
         'tips': [
             'Track proxy utilization patterns to right-size task slots.',
             'Document all server additions with credential IDs and connection fingerprints.',
             'Run component updates during maintenance windows with session follow-up.',
+            'Keep repository and platform health checks in the same review cadence as proxy health.',
         ],
     },
 }

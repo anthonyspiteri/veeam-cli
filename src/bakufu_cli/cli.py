@@ -396,7 +396,7 @@ def _completion_script_bash() -> str:
       ;;
     call) COMPREPLY=( $(compgen -W "--method --params --json --pretty --raw --formatted --refresh --dry-run --insecure -h --help" -- "$cur") ) ;;
     operations) COMPREPLY=( $(compgen -W "--tag -h --help" -- "$cur") ) ;;
-    mcp) COMPREPLY=( $(compgen -W "-s --services -e --helpers -w --workflows --insecure -h --help" -- "$cur") ) ;;
+    mcp) COMPREPLY=( $(compgen -W "-s --services -e --helpers --no-helpers -w --workflows --no-workflows --insecure -h --help" -- "$cur") ) ;;
     license)
       if [[ $COMP_CWORD -eq 2 ]]; then
         COMPREPLY=( $(compgen -W "show install-file" -- "$cur") )
@@ -405,7 +405,7 @@ def _completion_script_bash() -> str:
       fi
       ;;
     completion) COMPREPLY=( $(compgen -W "bash zsh -h --help" -- "$cur") ) ;;
-    getting-started) COMPREPLY=( $(compgen -W "--demo --script --persona --pretty --raw -h --help backup-admin backup-operator security-admin dr-operator auditor" -- "$cur") ) ;;
+    getting-started) COMPREPLY=( $(compgen -W "--demo --script --persona --pretty --raw -h --help backup-admin backup-operator security-admin dr-operator auditor storage-admin infrastructure-engineer" -- "$cur") ) ;;
     version) COMPREPLY=( $(compgen -W "-h --help" -- "$cur") ) ;;
   esac
 }
@@ -437,7 +437,7 @@ _bakufu() {
         services) _values 'services command' list ;;
         skills) _values 'skills command' list ;;
         workflows) _values 'workflow' investigateFailedJob createWasabiRepo capacityReport runSecurityAnalyzer validateImmutability ;;
-        mcp) _values 'options' -s --services -e --helpers -w --workflows --insecure ;;
+        mcp) _values 'options' -s --services -e --helpers --no-helpers -w --workflows --no-workflows --insecure ;;
         run)
           if (( CURRENT == 3 )); then
             local -a _tags
@@ -453,7 +453,7 @@ _bakufu() {
           ;;
         license) _values 'license command' show install-file ;;
         completion) _values 'shell' bash zsh ;;
-        getting-started) _values 'options' --demo --script --persona --pretty --raw backup-admin backup-operator security-admin dr-operator auditor ;;
+        getting-started) _values 'options' --demo --script --persona --pretty --raw backup-admin backup-operator security-admin dr-operator auditor storage-admin infrastructure-engineer ;;
         version) _values 'options' ;;
       esac
       ;;
@@ -1078,8 +1078,10 @@ def build_parser():
 
     mcp = subparsers.add_parser("mcp", help="Start MCP server over stdio")
     mcp.add_argument("-s", "--services", help="Comma-separated services to expose, or 'all'", default="all")
-    mcp.add_argument("-e", "--helpers", action="store_true", help="Expose helper tools")
-    mcp.add_argument("-w", "--workflows", action="store_true", help="Expose workflow tools")
+    mcp.add_argument("-e", "--helpers", action="store_true", default=True, help="Expose helper tools (default: on)")
+    mcp.add_argument("--no-helpers", action="store_false", dest="helpers", help="Disable helper tools")
+    mcp.add_argument("-w", "--workflows", action="store_true", default=True, help="Expose workflow tools (default: on)")
+    mcp.add_argument("--no-workflows", action="store_false", dest="workflows", help="Disable workflow tools")
     mcp.set_defaults(func=cmd_mcp)
 
     license_cmd = subparsers.add_parser("license", help="License operations")
