@@ -1,6 +1,6 @@
 # Updates and Releases
 
-This project supports two update paths:
+This project supports three update paths depending on how you installed.
 
 ## 1) Development Clone (git pull)
 
@@ -10,35 +10,58 @@ Use this if you cloned the repo and run editable installs.
 cd /path/to/veeam-cli
 git pull
 source .venv/bin/activate
-python -m pip install -e .
-python scripts/sync_skills_from_swagger.py
+uv pip install -e .    # or: python -m pip install -e .
+uv run python scripts/sync_skills_from_swagger.py
 ```
 
-Optional completion refresh:
+Refresh shell completions after update:
 
 ```bash
-bakufu completion zsh > ~/.bakufu-completion.zsh
-source ~/.bakufu-completion.zsh
+bakufu completion "$(basename $SHELL)" > ~/.bakufu-completion."$(basename $SHELL)"
+source ~/.bakufu-completion."$(basename $SHELL)"
 ```
 
-## 2) Versioned Release Tags (recommended)
+## 2) Versioned Release Tags
 
 Install/update from a pinned release tag:
 
 ```bash
+# using uv:
+uv pip install -U "git+https://github.com/anthonyspiteri/veeam-cli.git@v0.1.0"
+
+# using pip:
 python -m pip install -U "git+https://github.com/anthonyspiteri/veeam-cli.git@v0.1.0"
 ```
 
 This gives predictable upgrades and rollbacks.
 
-Binary-first update (no Python on target):
+## 3) Binary Install (no Python on target)
+
+The install scripts detect existing versions and upgrade automatically:
 
 ```bash
+# Linux/macOS -- check then upgrade:
+curl -fsSL https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.sh | bash -s -- --check
 curl -fsSL https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.sh | bash
+
+# Pin a specific version:
+curl -fsSL https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.sh | bash -s -- --version v0.2.0
+```
+
+```powershell
+# Windows -- check then upgrade:
+.\scripts\install.ps1 -Check
+.\scripts\install.ps1
+
+# Pin a specific version:
+.\scripts\install.ps1 -Version v0.2.0
 ```
 
 Installer behavior:
+- Detects existing installation and shows current version.
+- Skips download if already at latest (unless `--version` is specified).
 - Verifies binary integrity against release `SHA256SUMS.txt`.
+- Writes shell completion file and shows next-step instructions.
 - For private repos, authenticate with `gh auth login` or set `GITHUB_TOKEN`.
 
 ## Version Check
@@ -79,5 +102,9 @@ scripts/release.sh v0.1.1
 Pin an older tag:
 
 ```bash
+# pip:
 python -m pip install -U "git+https://github.com/anthonyspiteri/veeam-cli.git@v0.1.0"
+
+# binary:
+curl -fsSL .../install.sh | bash -s -- --version v0.1.0
 ```

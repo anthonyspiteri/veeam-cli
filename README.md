@@ -39,12 +39,11 @@ For standalone executable installs, see `docs/INSTALL_BINARY.md`.
 For update/upgrade flows, see `docs/UPDATES.md`.
 
 ```bash
-git clone <your-repo-url>
-cd veeam-api-agent
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e .
+git clone https://github.com/anthonyspiteri/veeam-cli.git
+cd veeam-cli
+uv venv && source .venv/bin/activate && uv pip install -e .
+# or without uv:
+# python3 -m venv .venv && source .venv/bin/activate && python -m pip install -e .
 ```
 
 Security defaults:
@@ -74,8 +73,8 @@ Development clone update:
 ```bash
 git pull
 source .venv/bin/activate
-python -m pip install -e .
-python scripts/sync_skills_from_swagger.py
+uv pip install -e .    # or: python -m pip install -e .
+uv run python scripts/sync_skills_from_swagger.py
 ```
 
 Version check:
@@ -91,7 +90,8 @@ Versioning is tag-driven (`setuptools-scm`):
 Pinned tag install/update:
 
 ```bash
-python -m pip install -U "git+https://github.com/anthonyspiteri/veeam-cli.git@v0.1.0"
+uv pip install -U "git+https://github.com/anthonyspiteri/veeam-cli.git@v0.1.0"
+# or: python -m pip install -U "git+https://github.com/anthonyspiteri/veeam-cli.git@v0.1.0"
 ```
 
 Cut and publish a release tag:
@@ -195,7 +195,7 @@ Skills index:
 Regenerate skills from latest local schema:
 
 ```bash
-python scripts/sync_skills_from_swagger.py
+uv run python scripts/sync_skills_from_swagger.py
 ```
 
 List skills in CLI:
@@ -206,10 +206,19 @@ bakufu skills list
 
 ## MCP Server
 
-`bakufu mcp` runs a stdio MCP server (Content-Length framed JSON-RPC), compatible with clients like Claude Desktop.
+`bakufu mcp` runs a stdio MCP server (Content-Length framed JSON-RPC), compatible with Claude Desktop, Claude Code, and other MCP clients.
+
+Helpers and workflows are exposed by default. Use `--no-helpers` or `--no-workflows` to disable.
 
 ```bash
-bakufu mcp -s Jobs,Sessions -e -w
+# All services, helpers, and workflows (default):
+bakufu mcp
+
+# Specific services only:
+bakufu mcp -s Jobs,Sessions
+
+# Disable helpers:
+bakufu mcp --no-helpers
 ```
 
 Claude Desktop config example:
@@ -219,16 +228,18 @@ Claude Desktop config example:
   "mcpServers": {
     "bakufu": {
       "command": "bakufu",
-      "args": ["mcp", "-s", "Jobs,Sessions", "-e", "-w"]
+      "args": ["mcp", "-s", "all"]
     }
   }
 }
 ```
 
 Flags:
-- `-s, --services <list|all>`: Comma-separated Swagger tags, or `all`
-- `-e, --helpers`: Expose helper tools
-- `-w, --workflows`: Expose workflow tools
+- `-s, --services <list|all>`: Comma-separated Swagger tags, or `all` (default: `all`)
+- `-e, --helpers`: Expose helper tools (default: on)
+- `--no-helpers`: Disable helper tools
+- `-w, --workflows`: Expose workflow tools (default: on)
+- `--no-workflows`: Disable workflow tools
 
 ## Advanced Usage
 
@@ -384,13 +395,13 @@ Schema looks outdated:
 Install editable package:
 
 ```bash
-python -m pip install -e .
+uv pip install -e .    # or: python -m pip install -e .
 ```
 
 Regenerate skill catalog:
 
 ```bash
-python scripts/sync_skills_from_swagger.py
+uv run python scripts/sync_skills_from_swagger.py
 ```
 
 Sanity check CLI:
