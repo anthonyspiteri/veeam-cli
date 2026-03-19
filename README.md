@@ -86,8 +86,8 @@ Versioning is tag-driven (`setuptools-scm`):
 bakufu getting-started
 bakufu getting-started --persona backup-admin
 bakufu auth setup lab --default
-bakufu jobs list --pretty
-bakufu license show --pretty
+bakufu jobs list
+bakufu license show
 ```
 
 For self-signed lab certs only:
@@ -135,7 +135,7 @@ Run any Swagger operation dynamically:
 ```bash
 bakufu services list
 bakufu operations --tag Jobs
-bakufu run Jobs GetAllJobs --pretty
+bakufu run Jobs GetAllJobs
 bakufu schema CreateBackupJob
 ```
 
