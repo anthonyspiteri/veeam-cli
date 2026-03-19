@@ -125,8 +125,10 @@ if [[ "${CHECK_ONLY}" == "true" ]]; then
 fi
 
 # Skip download if already at latest and no specific version requested
+# Use exact match: installed version must equal the tag (e.g. "0.1.9" == "0.1.9")
+# Dev/dirty suffixes (e.g. "0.1.9.dev0+...") are treated as different from the release.
 if [[ -n "${EXISTING_VERSION}" && -n "${LATEST_TAG}" && -z "${REQUESTED_TAG}" ]]; then
-  if [[ "${EXISTING_VERSION}" == *"${LATEST_TAG#v}"* ]]; then
+  if [[ "${EXISTING_VERSION}" == "${LATEST_TAG#v}" ]]; then
     echo "Already at latest version (${EXISTING_VERSION}). Use --version TAG to force a specific version."
     exit 0
   fi
