@@ -851,21 +851,31 @@ def _print_response(response, args):
         _raise_for_http_error(response)
         body = response.get("body") or ""
         output = getattr(args, "output", "table")
+        status = response["status"]
+
+        # 204 No Content or genuinely empty body
+        if not body:
+            print(f"HTTP {status} OK", file=sys.stderr)
+            return
 
         if output == "raw":
-            print(f"HTTP {response['status']}", file=sys.stderr)
-            if body:
-                print(body)
+            print(f"HTTP {status}", file=sys.stderr)
+            print(body)
             return
 
         # Parse body for table/json modes
         parsed = None
         try:
-            parsed = json.loads(body) if body else None
-        except json.JSONDecodeError:
+            parsed = json.loads(body)
+        except (json.JSONDecodeError, ValueError):
             pass
 
-        print(f"HTTP {response['status']}", file=sys.stderr)
+        # Empty JSON object {} = success confirmation
+        if isinstance(parsed, dict) and len(parsed) == 0:
+            print(f"HTTP {status} OK", file=sys.stderr)
+            return
+
+        print(f"HTTP {status}", file=sys.stderr)
 
         if output == "table":
             rendered = None
@@ -877,46 +887,89 @@ def _print_response(response, args):
                 print(rendered)
             elif parsed is not None:
                 print(json.dumps(parsed, indent=2))
-            elif body:
+            else:
                 print(body)
         else:  # json
             if parsed is not None:
                 print(json.dumps(parsed, indent=2))
-            elif body:
+            else:
                 print(body)
     else:
         print(response)
 
 
+def _cell_value(value: Any) -> str:
+    """Format a cell value for table display."""
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        if not value:
+            return ""
+        if all(not isinstance(item, (dict, list)) for item in value):
+            # Scalar array: comma-separated, clipped at 5 items
+            parts = [str(v) for v in value[:5]]
+            return ", ".join(parts) + ("\u2026" if len(value) > 5 else "")
+        return f"[{len(value)} items]"
+    if isinstance(value, dict):
+        # Prefer id or name as a compact reference
+        for key in ("id", "name", "type"):
+            if key in value:
+                return str(value[key])
+        return "{…}"
+    return str(value)
+
+
 def _render_object(payload: dict) -> Optional[str]:
-    """Render a single dict as a two-column key-value table (scalar fields only)."""
+    """Render a single dict as a two-column key-value table.
+
+    Scalar fields and scalar arrays are rendered inline.
+    Nested objects show id/name when available, otherwise {…}.
+    """
     if not payload or not isinstance(payload, dict):
         return None
-    flat_items = [(k, v) for k, v in payload.items() if not isinstance(v, (dict, list))]
-    if len(flat_items) < 1:
-        return None
-    key_width = min(max(len(k) for k, _ in flat_items), 40)
     lines = []
-    for k, v in flat_items:
-        val = "" if v is None else str(v)
+    key_width = min(max((len(k) for k in payload), default=0), 40)
+    for k, v in payload.items():
+        val = _cell_value(v)
         if len(val) > 100:
             val = val[:99] + "\u2026"
         lines.append(f"{k.ljust(key_width)}  {val}")
-    return "\n".join(lines)
+    return "\n".join(lines) if lines else None
 
 
 def _render_table(payload: Any) -> Optional[str]:
+    """Render a list/paginated response as a table.
+
+    Handles VBR API response shapes:
+      { "data": [...], "pagination": {...} }          (most endpoints)
+      { "items": [...], "pagination": {...} }         (FLR, BestPractices)
+      { "records": [...], "totalRecords": N }         (SessionLog)
+      { "items": [...] }                              (no pagination)
+    """
     rows = None
-    if isinstance(payload, dict) and isinstance(payload.get("data"), list):
-        rows = payload.get("data")
-    elif isinstance(payload, dict) and isinstance(payload.get("items"), list):
-        rows = payload.get("items")
-    elif isinstance(payload, dict) and isinstance(payload.get("results"), list):
-        rows = payload.get("results")
-    elif isinstance(payload, dict) and isinstance(payload.get("rows"), list):
-        rows = payload.get("rows")
+    pagination_footer = None
+
+    if isinstance(payload, dict):
+        # Collection field detection: data > items > records
+        for field in ("data", "items", "records"):
+            candidate = payload.get(field)
+            if isinstance(candidate, list):
+                rows = candidate
+                # Build pagination footer
+                pg = payload.get("pagination")
+                if isinstance(pg, dict):
+                    total = pg.get("total")
+                    count = pg.get("count")
+                    skip = pg.get("skip", 0)
+                    if total is not None and count is not None:
+                        end = (skip or 0) + count
+                        pagination_footer = f"Showing {(skip or 0) + 1}\u2013{end} of {total}"
+                elif "totalRecords" in payload:
+                    pagination_footer = f"{payload['totalRecords']} total records"
+                break
     elif isinstance(payload, list):
         rows = payload
+
     if not rows:
         return None
     if not all(isinstance(r, dict) for r in rows):
@@ -925,16 +978,8 @@ def _render_table(payload: Any) -> Optional[str]:
     keys = list(rows[0].keys())[:8]
     if not keys:
         return None
-    values = []
-    for row in rows:
-        vals = []
-        for key in keys:
-            value = row.get(key)
-            if isinstance(value, (dict, list)):
-                vals.append(json.dumps(value, separators=(",", ":")))
-            else:
-                vals.append("" if value is None else str(value))
-        values.append(vals)
+
+    values = [[_cell_value(row.get(key)) for key in keys] for row in rows]
 
     widths = [len(k) for k in keys]
     for vals in values:
@@ -942,14 +987,18 @@ def _render_table(payload: Any) -> Optional[str]:
             widths[i] = min(max(widths[i], len(v)), 80)
 
     def _clip(s: str, w: int) -> str:
-        return s if len(s) <= w else s[: w - 1] + "…"
+        return s if len(s) <= w else s[: w - 1] + "\u2026"
 
     header = " | ".join(_clip(k, widths[i]).ljust(widths[i]) for i, k in enumerate(keys))
     sep = "-+-".join("-" * widths[i] for i in range(len(keys)))
-    body = []
-    for vals in values:
-        body.append(" | ".join(_clip(v, widths[i]).ljust(widths[i]) for i, v in enumerate(vals)))
-    return "\n".join([header, sep] + body)
+    body_lines = [
+        " | ".join(_clip(v, widths[i]).ljust(widths[i]) for i, v in enumerate(vals))
+        for vals in values
+    ]
+    lines = [header, sep] + body_lines
+    if pagination_footer:
+        lines.append(pagination_footer)
+    return "\n".join(lines)
 
 
 def _add_output_flags(parser):
