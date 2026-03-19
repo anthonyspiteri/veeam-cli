@@ -98,9 +98,7 @@ bakufu --insecure auth setup lab --default
 
 ## What is bakufu?
 
-Most API-wrapper CLIs give you a 1:1 mapping of REST endpoints to commands. That means you get the API, but none of the operational knowledge of how to use it safely or effectively.
-
-bakufu is modelled on the same approach as the [Google Workspace CLI](https://github.com/googleworkspace/cli) — a purpose-built admin tool with domain-specific commands, structured output, and composable operations. The REST API is the foundation, not the product.
+bakufu is a purpose-built admin CLI for Veeam Backup & Replication. It goes beyond raw API access to give operators the commands, runbooks, and safety patterns they need to manage backup infrastructure effectively — without hand-crafting API calls or chaining curl requests.
 
 **For backup administrators:**
 - Role-specific commands and runbooks without hand-crafted API calls
