@@ -950,23 +950,32 @@ def _render_table(payload: Any) -> Optional[str]:
     pagination_footer = None
 
     if isinstance(payload, dict):
-        # Collection field detection: data > items > records
-        for field in ("data", "items", "records"):
+        # 1. Try known VBR list keys in priority order
+        for field in ("data", "items", "records", "workloads", "tenantResources"):
             candidate = payload.get(field)
             if isinstance(candidate, list):
                 rows = candidate
-                # Build pagination footer
-                pg = payload.get("pagination")
-                if isinstance(pg, dict):
-                    total = pg.get("total")
-                    count = pg.get("count")
-                    skip = pg.get("skip", 0)
-                    if total is not None and count is not None:
-                        end = (skip or 0) + count
-                        pagination_footer = f"Showing {(skip or 0) + 1}\u2013{end} of {total}"
-                elif "totalRecords" in payload:
-                    pagination_footer = f"{payload['totalRecords']} total records"
                 break
+
+        # 2. Auto-detect: scan all values for a list of dicts (covers any undocumented key)
+        if rows is None:
+            for v in payload.values():
+                if isinstance(v, list) and v and all(isinstance(item, dict) for item in v):
+                    rows = v
+                    break
+
+        if rows is not None:
+            # Build pagination footer
+            pg = payload.get("pagination")
+            if isinstance(pg, dict):
+                total = pg.get("total")
+                count = pg.get("count")
+                skip = pg.get("skip", 0)
+                if total is not None and count is not None:
+                    end = (skip or 0) + count
+                    pagination_footer = f"Showing {(skip or 0) + 1}\u2013{end} of {total}"
+            elif "totalRecords" in payload:
+                pagination_footer = f"{payload['totalRecords']} total records"
     elif isinstance(payload, list):
         rows = payload
 
