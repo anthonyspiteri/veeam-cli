@@ -255,10 +255,18 @@ Flags:
 
 ## Advanced Usage
 
+Output modes:
+
+```bash
+bakufu jobs list                               # structured table (default)
+bakufu jobs list --json                        # pretty JSON
+bakufu jobs list --raw                         # compact JSON
+```
+
 Direct API path call:
 
 ```bash
-bakufu call /api/v1/serverInfo --pretty
+bakufu call /api/v1/serverInfo
 ```
 
 Dry-run request preview:
@@ -267,16 +275,11 @@ Dry-run request preview:
 bakufu run Jobs GetAllJobs --params '{"limit": 5}' --dry-run
 ```
 
-Raw output (compact JSON):
+Pass a request body:
 
 ```bash
-bakufu run Service GetServerTime --raw
-```
-
-Formatted output:
-
-```bash
-bakufu run Services GetAllServices --formatted table
+bakufu run Jobs CreateBackupJob --body '{"name": "Nightly"}'
+bakufu run Jobs CreateBackupJob --body @job-spec.json
 ```
 
 Pagination (NDJSON one page per line):
@@ -303,7 +306,7 @@ bakufu run Security GetBestPracticesComplianceResult
 License install from local `.lic` file:
 
 ```bash
-bakufu license install-file /absolute/path/to/license.lic --pretty
+bakufu license install-file /absolute/path/to/license.lic
 ```
 
 Shell completion:

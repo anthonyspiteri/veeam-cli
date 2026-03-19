@@ -130,13 +130,13 @@ def cmd_auth_default(args):
 
 def cmd_call(args):
     params = _parse_json_arg(args.params) or {}
-    data = _parse_json_arg(args.json)
+    data = _parse_json_arg(args.body)
     response = call_api(
         args.path,
         method=args.method,
         params=params,
         data=data,
-        pretty=args.pretty,
+        pretty=False,
         refresh=args.refresh,
         dry_run=args.dry_run,
         account=args.account,
@@ -185,7 +185,7 @@ def cmd_run(args):
         )
 
     params = _parse_json_arg(args.params) or {}
-    data = _parse_json_arg(args.json)
+    data = _parse_json_arg(args.body)
 
     if args.page_all:
         pages = call_api_paginated(
@@ -196,7 +196,7 @@ def cmd_run(args):
             page_delay_ms=args.page_delay,
             method=op.method,
             data=data,
-            pretty=args.pretty,
+            pretty=False,
             refresh=args.refresh,
             dry_run=args.dry_run,
             account=args.account,
@@ -213,7 +213,7 @@ def cmd_run(args):
         method=op.method,
         params=params,
         data=data,
-        pretty=args.pretty,
+        pretty=False,
         refresh=args.refresh,
         dry_run=args.dry_run,
         account=args.account,
@@ -240,30 +240,30 @@ def cmd_schema(args):
 
 
 def cmd_jobs_list(args):
-    response = call_api("/api/v1/jobs", pretty=args.pretty, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    response = call_api("/api/v1/jobs", pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
 
 def cmd_jobs_start(args):
     path = f"/api/v1/jobs/{args.job_id}/start"
-    response = call_api(path, method="POST", data={}, pretty=args.pretty, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    response = call_api(path, method="POST", data={}, pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
 
 def cmd_sessions_show(args):
     path = f"/api/v1/sessions/{args.session_id}"
-    response = call_api(path, pretty=args.pretty, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    response = call_api(path, pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
 
 def cmd_sessions_logs(args):
     path = f"/api/v1/sessions/{args.session_id}/logs"
-    response = call_api(path, pretty=args.pretty, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    response = call_api(path, pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
 
 def cmd_license_show(args):
-    response = call_api("/api/v1/license", pretty=args.pretty, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    response = call_api("/api/v1/license", pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
 
@@ -286,7 +286,7 @@ def cmd_license_install_file(args):
         "/api/v1/license/install",
         method="POST",
         data=payload,
-        pretty=args.pretty,
+        pretty=False,
         refresh=args.refresh,
         dry_run=args.dry_run,
         account=args.account,
@@ -317,15 +317,16 @@ def cmd_workflow(args):
         payload["intervalMs"] = int(getattr(args, "interval_ms", 2000) or 2000)
         payload["timeoutMs"] = int(getattr(args, "timeout_ms", 300000) or 300000)
     result = run_workflow(workflow_name, payload)
-    if getattr(args, "formatted", None) == "table":
+    output = getattr(args, "output", "table")
+    if output == "raw":
+        print(json.dumps(result, separators=(",", ":")))
+        return
+    if output == "table":
         rendered = _render_table(result)
         if rendered:
             print(rendered)
             return
-    if args.pretty:
-        print(json.dumps(result, indent=2))
-    else:
-        print(json.dumps(result, separators=(",", ":")))
+    print(json.dumps(result, indent=2))
 
 
 def cmd_mcp(args):
@@ -362,14 +363,14 @@ def _completion_script_bash() -> str:
       if [[ $COMP_CWORD -eq 2 ]]; then
         COMPREPLY=( $(compgen -W "list start" -- "$cur") )
       else
-        COMPREPLY=( $(compgen -W "--pretty --raw --formatted --refresh --dry-run -h --help" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--json --raw --refresh --dry-run -h --help" -- "$cur") )
       fi
       ;;
     sessions)
       if [[ $COMP_CWORD -eq 2 ]]; then
         COMPREPLY=( $(compgen -W "show logs" -- "$cur") )
       else
-        COMPREPLY=( $(compgen -W "--pretty --raw --formatted --refresh --dry-run -h --help" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--json --raw --refresh --dry-run -h --help" -- "$cur") )
       fi
       ;;
     services) COMPREPLY=( $(compgen -W "list -h --help" -- "$cur") ) ;;
@@ -391,21 +392,21 @@ def _completion_script_bash() -> str:
         ops="$(bakufu operations --tag "${COMP_WORDS[2]}" 2>/dev/null | awk '{print $2}')"
         COMPREPLY=( $(compgen -W "$ops" -- "$cur") )
       else
-        COMPREPLY=( $(compgen -W "--params --json --pretty --raw --formatted --refresh --dry-run --page-all --page-limit --page-max --page-delay -h --help" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--params --body --json --raw --refresh --dry-run --page-all --page-limit --page-max --page-delay -h --help" -- "$cur") )
       fi
       ;;
-    call) COMPREPLY=( $(compgen -W "--method --params --json --pretty --raw --formatted --refresh --dry-run --insecure -h --help" -- "$cur") ) ;;
+    call) COMPREPLY=( $(compgen -W "--method --params --body --json --raw --refresh --dry-run --insecure -h --help" -- "$cur") ) ;;
     operations) COMPREPLY=( $(compgen -W "--tag -h --help" -- "$cur") ) ;;
     mcp) COMPREPLY=( $(compgen -W "-s --services -e --helpers --no-helpers -w --workflows --no-workflows --insecure -h --help" -- "$cur") ) ;;
     license)
       if [[ $COMP_CWORD -eq 2 ]]; then
         COMPREPLY=( $(compgen -W "show install-file" -- "$cur") )
       else
-        COMPREPLY=( $(compgen -W "--pretty --raw --formatted --refresh --dry-run --force-standalone-mode -h --help" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--json --raw --refresh --dry-run --force-standalone-mode -h --help" -- "$cur") )
       fi
       ;;
     completion) COMPREPLY=( $(compgen -W "bash zsh -h --help" -- "$cur") ) ;;
-    getting-started) COMPREPLY=( $(compgen -W "--demo --script --persona --pretty --raw -h --help backup-admin backup-operator security-admin dr-operator auditor storage-admin infrastructure-engineer" -- "$cur") ) ;;
+    getting-started) COMPREPLY=( $(compgen -W "--demo --script --persona --json --raw -h --help backup-admin backup-operator security-admin dr-operator auditor storage-admin infrastructure-engineer" -- "$cur") ) ;;
     version) COMPREPLY=( $(compgen -W "-h --help" -- "$cur") ) ;;
   esac
 }
@@ -448,12 +449,12 @@ _bakufu() {
             _ops=("${(@f)$(bakufu operations --tag "$words[3]" 2>/dev/null | awk '{print $2}')}")
             compadd -- ${_ops}
           else
-            _values 'run options' --params --json --pretty --raw --formatted --refresh --dry-run --page-all --page-limit --page-max --page-delay --insecure
+            _values 'run options' --params --body --json --raw --refresh --dry-run --page-all --page-limit --page-max --page-delay --insecure
           fi
           ;;
         license) _values 'license command' show install-file ;;
         completion) _values 'shell' bash zsh ;;
-        getting-started) _values 'options' --demo --script --persona --pretty --raw backup-admin backup-operator security-admin dr-operator auditor storage-admin infrastructure-engineer ;;
+        getting-started) _values 'options' --demo --script --persona --json --raw backup-admin backup-operator security-admin dr-operator auditor storage-admin infrastructure-engineer ;;
         version) _values 'options' ;;
       esac
       ;;
@@ -717,19 +718,19 @@ bakufu mcp --services Service,Jobs,Sessions --helpers --workflows
             "service.time",
             "bakufu GetServerTime",
             "Read-only unauthenticated server-time endpoint check.",
-            lambda: call_api("/api/v1/serverTime", pretty=True, account=args.account),
+            lambda: call_api("/api/v1/serverTime", pretty=False, account=args.account),
         ),
         (
             "service.info",
             "bakufu call /api/v1/serverInfo",
             "Read-only authenticated server information check.",
-            lambda: call_api("/api/v1/serverInfo", pretty=True, account=args.account),
+            lambda: call_api("/api/v1/serverInfo", pretty=False, account=args.account),
         ),
         (
             "license.show",
             "bakufu license show",
             "Read current license status and edition.",
-            lambda: call_api("/api/v1/license", pretty=True, account=args.account),
+            lambda: call_api("/api/v1/license", pretty=False, account=args.account),
         ),
     ]
     for index, (name, command, hint_text, fn) in enumerate(checks, start=1):
@@ -772,8 +773,12 @@ bakufu mcp --services Service,Jobs,Sessions --helpers --workflows
             )
 
     report["ok"] = all(step.get("ok") for step in report["steps"])
-    if not args.pretty:
+    output = getattr(args, "output", "table")
+    if output == "raw":
         print(json.dumps(report, separators=(",", ":")))
+        return
+    if output == "json":
+        print(json.dumps(report, indent=2))
         return
 
     print("bakufu getting-started demo (read-only)")
@@ -845,21 +850,59 @@ def _print_response(response, args):
     if isinstance(response, dict) and "status" in response:
         _raise_for_http_error(response)
         body = response.get("body") or ""
-        if getattr(args, "formatted", None) == "table":
-            try:
-                parsed = json.loads(body) if body else None
-            except json.JSONDecodeError:
-                parsed = None
-            rendered = _render_table(parsed)
-            if rendered:
-                print(f"HTTP {response['status']}", file=sys.stderr)
-                print(rendered)
-                return
+        output = getattr(args, "output", "table")
+
+        if output == "raw":
+            print(f"HTTP {response['status']}", file=sys.stderr)
+            if body:
+                print(body)
+            return
+
+        # Parse body for table/json modes
+        parsed = None
+        try:
+            parsed = json.loads(body) if body else None
+        except json.JSONDecodeError:
+            pass
+
         print(f"HTTP {response['status']}", file=sys.stderr)
-        if body:
-            print(body)
+
+        if output == "table":
+            rendered = None
+            if parsed is not None:
+                rendered = _render_table(parsed)
+                if rendered is None and isinstance(parsed, dict):
+                    rendered = _render_object(parsed)
+            if rendered:
+                print(rendered)
+            elif parsed is not None:
+                print(json.dumps(parsed, indent=2))
+            elif body:
+                print(body)
+        else:  # json
+            if parsed is not None:
+                print(json.dumps(parsed, indent=2))
+            elif body:
+                print(body)
     else:
         print(response)
+
+
+def _render_object(payload: dict) -> Optional[str]:
+    """Render a single dict as a two-column key-value table (scalar fields only)."""
+    if not payload or not isinstance(payload, dict):
+        return None
+    flat_items = [(k, v) for k, v in payload.items() if not isinstance(v, (dict, list))]
+    if len(flat_items) < 1:
+        return None
+    key_width = min(max(len(k) for k, _ in flat_items), 40)
+    lines = []
+    for k, v in flat_items:
+        val = "" if v is None else str(v)
+        if len(val) > 100:
+            val = val[:99] + "\u2026"
+        lines.append(f"{k.ljust(key_width)}  {val}")
+    return "\n".join(lines)
 
 
 def _render_table(payload: Any) -> Optional[str]:
@@ -911,10 +954,11 @@ def _render_table(payload: Any) -> Optional[str]:
 
 def _add_output_flags(parser):
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--pretty", dest="pretty", action="store_true", help="Pretty-print JSON output (default)")
-    group.add_argument("--raw", dest="pretty", action="store_false", help="Emit compact/raw JSON output")
-    parser.set_defaults(pretty=True)
-    parser.add_argument("--formatted", choices=["table"], help="Render response in friendly table format when possible")
+    group.add_argument("--json", dest="output", action="store_const", const="json",
+                       help="Pretty-print JSON output")
+    group.add_argument("--raw", dest="output", action="store_const", const="raw",
+                       help="Compact JSON output")
+    parser.set_defaults(output="table")
 
 
 def _add_auth_parser(subparsers):
@@ -984,7 +1028,7 @@ def build_parser():
     call.add_argument("path")
     call.add_argument("--method", default="GET")
     call.add_argument("--params")
-    call.add_argument("--json")
+    call.add_argument("--body", help="Request body as JSON string or @file path")
     _add_output_flags(call)
     call.add_argument("--refresh", action="store_true")
     call.add_argument("--dry-run", action="store_true")
@@ -1004,7 +1048,7 @@ def build_parser():
     run.add_argument("tag")
     run.add_argument("operation_id")
     run.add_argument("--params")
-    run.add_argument("--json")
+    run.add_argument("--body", help="Request body as JSON string or @file path")
     _add_output_flags(run)
     run.add_argument("--refresh", action="store_true")
     run.add_argument("--dry-run", action="store_true")
@@ -1112,10 +1156,8 @@ def build_parser():
         choices=["backup-admin", "backup-operator", "security-admin", "dr-operator", "auditor"],
         help="Print detailed onboarding for a specific backup persona",
     )
-    group = getting_started.add_mutually_exclusive_group()
-    group.add_argument("--pretty", dest="pretty", action="store_true", help="Pretty JSON output (default)")
-    group.add_argument("--raw", dest="pretty", action="store_false", help="Compact JSON output")
-    getting_started.set_defaults(pretty=True, func=cmd_getting_started)
+    _add_output_flags(getting_started)
+    getting_started.set_defaults(func=cmd_getting_started)
 
     version_cmd = subparsers.add_parser("version", help="Print CLI version")
     version_cmd.set_defaults(func=cmd_version)
