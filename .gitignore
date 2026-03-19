@@ -19,3 +19,4 @@ token.*.json
 
 # PyInstaller
 *.spec
+.DS_Store
