@@ -17,6 +17,10 @@ token.json
 token.*.json
 *.lic
 
+# Environment variable files
+.env
+*.env
+
 # PyInstaller
 *.spec
 .DS_Store

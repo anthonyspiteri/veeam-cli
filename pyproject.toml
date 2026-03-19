@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bakufu-cli"
 dynamic = ["version"]
-description = "POC CLI for Veeam Backup & Replication v13"
+description = "Multi-layer admin CLI for Veeam Backup & Replication"
 authors = [{ name = "Anthony Spiteri" }]
 requires-python = ">=3.9"
 dependencies = [

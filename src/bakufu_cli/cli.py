@@ -72,6 +72,8 @@ def cmd_auth_login(args):
     server = args.server
     username = args.username
     password = args.password
+    if password:
+        print("Warning: passing --password on the command line exposes it in shell history and process lists. Omit it to use the secure interactive prompt.", file=sys.stderr)
     if not server:
         server = input("Server URL: ").strip()
     if not username:
@@ -97,6 +99,8 @@ def cmd_auth_setup(args):
     server = args.server
     username = args.username
     password = args.password
+    if password:
+        print("Warning: passing --password on the command line exposes it in shell history and process lists. Omit it to use the secure interactive prompt.", file=sys.stderr)
     if not server:
         server = input("Server URL: ").strip()
     if not username:
@@ -1028,7 +1032,7 @@ def _add_auth_parser(subparsers):
     auth_setup_cmd.add_argument("account_name")
     auth_setup_cmd.add_argument("--server")
     auth_setup_cmd.add_argument("--username")
-    auth_setup_cmd.add_argument("--password")
+    auth_setup_cmd.add_argument("--password", help="Password (omit to use secure interactive prompt — avoids shell history exposure)")
     auth_setup_cmd.add_argument("--default", action="store_true")
     auth_setup_cmd.add_argument("--insecure", action="store_true", help="Disable TLS certificate verification")
     auth_setup_cmd.set_defaults(func=cmd_auth_setup)
@@ -1037,7 +1041,7 @@ def _add_auth_parser(subparsers):
     auth_login.add_argument("account_name")
     auth_login.add_argument("--server")
     auth_login.add_argument("--username")
-    auth_login.add_argument("--password")
+    auth_login.add_argument("--password", help="Password (omit to use secure interactive prompt — avoids shell history exposure)")
     auth_login.add_argument("--default", action="store_true")
     auth_login.add_argument("--insecure", action="store_true", help="Disable TLS certificate verification")
     auth_login.set_defaults(func=cmd_auth_login)
@@ -1059,7 +1063,7 @@ def _add_auth_parser(subparsers):
     auth_setup_legacy.add_argument("account_name")
     auth_setup_legacy.add_argument("--server")
     auth_setup_legacy.add_argument("--username")
-    auth_setup_legacy.add_argument("--password")
+    auth_setup_legacy.add_argument("--password", help="Password (omit to use secure interactive prompt — avoids shell history exposure)")
     auth_setup_legacy.add_argument("--default", action="store_true")
     auth_setup_legacy.add_argument("--insecure", action="store_true", help="Disable TLS certificate verification")
     auth_setup_legacy.set_defaults(func=cmd_auth_setup)
@@ -1068,7 +1072,7 @@ def _add_auth_parser(subparsers):
     auth_login_legacy.add_argument("account_name")
     auth_login_legacy.add_argument("--server")
     auth_login_legacy.add_argument("--username")
-    auth_login_legacy.add_argument("--password")
+    auth_login_legacy.add_argument("--password", help="Password (omit to use secure interactive prompt — avoids shell history exposure)")
     auth_login_legacy.add_argument("--default", action="store_true")
     auth_login_legacy.add_argument("--insecure", action="store_true", help="Disable TLS certificate verification")
     auth_login_legacy.set_defaults(func=cmd_auth_login)

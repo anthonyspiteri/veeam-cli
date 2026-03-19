@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import tempfile
 import urllib.parse
 import subprocess
@@ -80,7 +81,7 @@ def _curl_request(
             elif ":" in line:
                 key, value = line.split(":", 1)
                 headers[key.strip()] = value.strip()
-        return {"cmd": cmd, "status": status, "headers": headers, "body": body}
+        return {"cmd": _redact_cmd(cmd), "status": status, "headers": headers, "body": body}
     finally:
         try:
             os.close(header_fd)
@@ -115,6 +116,9 @@ def call_api(
     token = get_access_token(force_refresh=refresh, account=account)
     payload = json.dumps(data) if data is not None else None
     insecure = _is_truthy(creds.get("insecure")) or _is_truthy(os.getenv("BAKUFU_INSECURE"))
+
+    if insecure:
+        print("Warning: TLS certificate verification is disabled (--insecure). Do not use in production.", file=sys.stderr)
 
     response = _curl_request(
         url,
