@@ -1,12 +1,11 @@
 # bakufu-cli
 
-One CLI for Veeam Backup & Replication v13 — built for humans and AI agents.  
-Swagger-driven operations, structured JSON output, MCP server mode, multi-account auth, and curated backup workflows.
+A multi-layer admin CLI for Veeam Backup & Replication — structured commands, operational runbooks, and role-based workflows for backup admins and infrastructure engineers. Includes MCP server mode for AI agent integration.
 
-> Note  
+> Note
 > This is a community project and is not an officially supported Veeam product.
 
-> Important  
+> Important
 > This project is under active development. Expect changes as it evolves.
 
 ## Contents
@@ -15,9 +14,11 @@ Swagger-driven operations, structured JSON output, MCP server mode, multi-accoun
 - Installation
 - Updates
 - Quick Start
-- Why bakufu?
+- What is bakufu?
+- Command Layers
 - Authentication
-- AI Agent Skills
+- Workflows
+- Skills and Personas
 - MCP Server
 - Advanced Usage
 - Environment Variables
@@ -27,10 +28,9 @@ Swagger-driven operations, structured JSON output, MCP server mode, multi-accoun
 
 ## Prerequisites
 
-- Python `3.9+`
+- Python `3.9+` (or use binary install — no Python required on target)
 - `curl` available in `PATH`
 - Access to a Veeam Backup & Replication v13 REST API endpoint
-- Local Swagger schema JSON in `schemas/` (or `swagger_v1.3.json`)
 
 ## Installation
 
@@ -46,40 +46,33 @@ uv venv && source .venv/bin/activate && uv pip install -e .
 # python3 -m venv .venv && source .venv/bin/activate && python -m pip install -e .
 ```
 
+Binary install (no Python on target):
+
+```bash
+# Linux/macOS one-command installer:
+curl -fsSL https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.sh | bash
+
+# Windows:
+irm https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.ps1 | iex
+```
+
+Installers verify SHA256 checksums before install, detect existing versions, and set up shell completions automatically.
+
 Security defaults:
 - TLS certificate validation is enabled by default.
 - Use `--insecure` only for lab/self-signed certificate scenarios.
 
-Binary install (no Python on target):
-
-```bash
-# one-command installer:
-curl -fsSL https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.sh | bash
-
-# or manual from release assets:
-# chmod +x bakufu-linux-x86_64
-# sudo mv bakufu-linux-x86_64 /usr/local/bin/bakufu
-bakufu version
-```
-
-Binary installer security:
-- Installers require and verify release `SHA256SUMS.txt` before install.
-- For private repos, authenticate with `gh auth login` or `GITHUB_TOKEN`.
-
 ## Updates
 
-Development clone update:
-
 ```bash
-git pull
-source .venv/bin/activate
-uv pip install -e .    # or: python -m pip install -e .
-uv run python scripts/sync_skills_from_swagger.py
-```
+# Binary installs — re-run installer (detects and skips if already latest):
+curl -fsSL https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.sh | bash
 
-Version check:
+# Development clone:
+git pull && uv pip install -e .
 
-```bash
+# Check installed vs latest:
+curl -fsSL https://raw.githubusercontent.com/anthonyspiteri/veeam-cli/main/scripts/install.sh | bash -s -- --check
 bakufu version
 ```
 
@@ -87,26 +80,12 @@ Versioning is tag-driven (`setuptools-scm`):
 - release tags: `vX.Y.Z`
 - non-tagged commits: dev versions (for example `0.1.2.devN+g<sha>`)
 
-Pinned tag install/update:
-
-```bash
-uv pip install -U "git+https://github.com/anthonyspiteri/veeam-cli.git@v0.1.0"
-# or: python -m pip install -U "git+https://github.com/anthonyspiteri/veeam-cli.git@v0.1.0"
-```
-
-Cut and publish a release tag:
-
-```bash
-scripts/release.sh v0.1.1
-```
-
 ## Quick Start
 
 ```bash
 bakufu getting-started
 bakufu getting-started --persona backup-admin
 bakufu auth setup lab --default
-bakufu auth token --refresh
 bakufu jobs list --pretty
 bakufu license show --pretty
 ```
@@ -117,33 +96,54 @@ For self-signed lab certs only:
 bakufu --insecure auth setup lab --default
 ```
 
+## What is bakufu?
+
+Most API-wrapper CLIs give you a 1:1 mapping of REST endpoints to commands. That means you get the API, but none of the operational knowledge of how to use it safely or effectively.
+
+bakufu is modelled on the same approach as the [Google Workspace CLI](https://github.com/googleworkspace/cli) — a purpose-built admin tool with domain-specific commands, structured output, and composable operations. The REST API is the foundation, not the product.
+
+**For backup administrators:**
+- Role-specific commands and runbooks without hand-crafted API calls
+- Multi-step operations with safety built in (e.g. GET-merge-PUT prevents config overwrites)
+- Sequenced workflows for common tasks: investigate a failed job, review repository health, run security analysis, validate restore readiness
+
+**For infrastructure engineers:**
+- Proxy, managed server, WAN accelerator, and repository management
+- Platform inventory browsing (vSphere, Hyper-V, Cloud Director)
+- Component version tracking and rescan orchestration
+
+**For AI agents:**
+- Consistent structured JSON output across all commands
+- MCP server mode for Claude Desktop, Claude Code, and other MCP-compatible environments
+- Skill library with role-based context, recipes, and safe helper tools
+
+## Command Layers
+
+bakufu is built in four composable layers:
+
+| Layer | Count | Description |
+|---|---|---|
+| Services | 67 | Direct Swagger-driven API operations — every VBR domain exposed as commands |
+| Helpers | 18 | Multi-call operations with safety patterns (name resolution, atomic updates, aggregations) |
+| Recipes | 42 | Sequenced runbooks with prerequisites, ordered steps, and domain notes |
+| Personas | 7 | Role-based skill bundles — backup-admin, storage-admin, infrastructure-engineer, and more |
+
+**Total: 109 skills**
+
 Run any Swagger operation dynamically:
 
 ```bash
 bakufu services list
 bakufu operations --tag Jobs
 bakufu run Jobs GetAllJobs --pretty
+bakufu schema CreateBackupJob
 ```
-
-## Why bakufu?
-
-For humans:
-- Avoid hand-written `curl` calls for common operations.
-- Discover available services and operations from Swagger.
-- Use `--dry-run` for request preview and `--page-all` for auto-pagination.
-- Pretty JSON is the default output; use `--raw` for compact JSON.
-- Use `--formatted table` for tabular rendering where possible.
-
-For AI agents:
-- Consistent JSON output for command and MCP tool calls.
-- Helper tools and workflows reduce orchestration boilerplate.
-- Persona/recipe skill library for backup-specific tasks.
 
 ## Authentication
 
 The CLI supports account-based auth, env-based auth, and file-based auth.
 
-Interactive setup and validation:
+Interactive setup (recommended):
 
 ```bash
 bakufu auth setup lab --default
@@ -180,38 +180,50 @@ Credential storage:
 - Legacy fallback: `.bakufu/accounts.json` and `.bakufu/token*.json` are still read
 - Legacy plaintext account passwords are auto-migrated into keyring when encountered
 
-## AI Agent Skills
+## Workflows
 
-The repo ships a generated skills library:
-- Service skills (from Swagger tags)
-- Helper skills
-- Persona skills
-- Recipe skills
-
-Skills index:
-- `docs/skills.md`
-- `docs/SKILL_CONVENTIONS.md`
-
-Regenerate skills from latest local schema:
+Built-in multi-step workflows for common operational tasks:
 
 ```bash
-uv run python scripts/sync_skills_from_swagger.py
+bakufu workflows investigateFailedJob --job-name "Daily Backup"
+bakufu workflows createWasabiRepo --spec @wasabi_repo.json
+bakufu workflows capacityReport
+bakufu workflows runSecurityAnalyzer --wait --timeout-ms 600000
+bakufu workflows validateImmutability
 ```
 
-List skills in CLI:
+## Skills and Personas
+
+bakufu ships a generated skills library for role-based operations and AI agent context.
+
+Load a persona to get role-specific guidance:
+
+```bash
+bakufu getting-started --persona backup-admin
+bakufu getting-started --persona storage-admin
+bakufu getting-started --persona infrastructure-engineer
+```
+
+List all available skills:
 
 ```bash
 bakufu skills list
 ```
 
-## MCP Server
+Skills index: `docs/skills.md`
 
-`bakufu mcp` runs a stdio MCP server (Content-Length framed JSON-RPC), compatible with Claude Desktop, Claude Code, and other MCP clients.
-
-Helpers and workflows are exposed by default. Use `--no-helpers` or `--no-workflows` to disable.
+Regenerate from latest local schema:
 
 ```bash
-# All services, helpers, and workflows (default):
+uv run python scripts/sync_skills_from_swagger.py
+```
+
+## MCP Server
+
+`bakufu mcp` exposes the CLI as a stdio MCP server (Content-Length framed JSON-RPC), compatible with Claude Desktop, Claude Code, and other MCP clients. Helpers and workflows are included by default.
+
+```bash
+# All services, helpers, and workflows:
 bakufu mcp
 
 # Specific services only:
@@ -243,10 +255,18 @@ Flags:
 
 ## Advanced Usage
 
+Output modes:
+
+```bash
+bakufu jobs list                               # structured table (default)
+bakufu jobs list --json                        # pretty JSON
+bakufu jobs list --raw                         # compact JSON
+```
+
 Direct API path call:
 
 ```bash
-bakufu call /api/v1/serverInfo --pretty
+bakufu call /api/v1/serverInfo
 ```
 
 Dry-run request preview:
@@ -255,16 +275,11 @@ Dry-run request preview:
 bakufu run Jobs GetAllJobs --params '{"limit": 5}' --dry-run
 ```
 
-Raw output (compact JSON):
+Pass a request body:
 
 ```bash
-bakufu run Service GetServerTime --raw
-```
-
-Formatted output:
-
-```bash
-bakufu run Services GetAllServices --formatted table
+bakufu run Jobs CreateBackupJob --body '{"name": "Nightly"}'
+bakufu run Jobs CreateBackupJob --body @job-spec.json
 ```
 
 Pagination (NDJSON one page per line):
@@ -281,43 +296,28 @@ Schema introspection by operationId:
 bakufu schema GetAllJobs
 ```
 
-Built-in workflows:
-
-```bash
-bakufu workflows investigateFailedJob --job-name "Daily Backup"
-bakufu workflows createWasabiRepo --spec @wasabi_repo.json
-bakufu workflows capacityReport
-bakufu workflows runSecurityAnalyzer
-bakufu workflows runSecurityAnalyzer --wait --timeout-ms 600000
-bakufu workflows validateImmutability
-```
-
-Security Analyzer result endpoints directly:
+Security Analyzer:
 
 ```bash
 bakufu run Security GetSecurityAnalyzerSession
 bakufu run Security GetBestPracticesComplianceResult
 ```
 
-One-line license install from local `.lic` file:
+License install from local `.lic` file:
 
 ```bash
-bakufu license install-file /absolute/path/to/license.lic --pretty
+bakufu license install-file /absolute/path/to/license.lic
 ```
 
 Shell completion:
 
 ```bash
-# one-step helper (auto-detects shell, writes completion file, updates rc):
+# one-step setup (auto-detects shell, writes file, updates rc):
 scripts/setup-completion.sh
 
-# bash
-bakufu completion bash > ~/.bakufu-completion.bash
-echo 'source ~/.bakufu-completion.bash' >> ~/.bashrc
-
-# zsh
-bakufu completion zsh > ~/.bakufu-completion.zsh
-echo 'source ~/.bakufu-completion.zsh' >> ~/.zshrc
+# or manually:
+bakufu completion bash > ~/.bakufu-completion.bash && echo 'source ~/.bakufu-completion.bash' >> ~/.bashrc
+bakufu completion zsh  > ~/.bakufu-completion.zsh  && echo 'source ~/.bakufu-completion.zsh'  >> ~/.zshrc
 ```
 
 ## Environment Variables
@@ -342,8 +342,15 @@ Credential resolution precedence:
 
 ## Architecture
 
-High level:
-1. Load Swagger from newest `schemas/swagger*.json` (or `BAKUFU_SWAGGER_PATH`, fallback `swagger_v1.3.json`)
+Four-layer command model:
+
+1. **Services** — Swagger-driven, auto-generated from API tags. Every VBR REST domain is a service.
+2. **Helpers** — Python-implemented multi-call tools with safe write patterns and aggregations.
+3. **Recipes** — Sequenced runbooks: what to run, in what order, what to look for.
+4. **Personas** — Role bundles that load the right recipes and helpers for a given operator.
+
+Execution path:
+1. Load Swagger from newest `schemas/swagger*.json` (or `BAKUFU_SWAGGER_PATH`)
 2. Build service and operation model from tags/paths
 3. Resolve auth context and access token
 4. Execute via `curl`
@@ -379,16 +386,14 @@ No account found / wrong account used:
 - Or override per command: `bakufu --account <name> ...`
 
 Invalid command/subcommand:
-- bakufu now returns structured JSON usage errors with nearest-command suggestions.
-- Example: typing `auth-setp` will include a hint like `Did you mean auth-setup?`
+- bakufu returns structured JSON usage errors with nearest-command suggestions.
 
 Missing keyring backend:
-- Install/repair keyring dependencies in your environment.
-- Reinstall package: `python -m pip install -e .`
+- Reinstall package: `uv pip install -e .`
 
 Schema looks outdated:
-- Put latest schema JSON in `schemas/` and rerun:
-- `python scripts/sync_skills_from_swagger.py`
+- Drop latest schema JSON into `schemas/` and run:
+- `uv run python scripts/sync_skills_from_swagger.py`
 
 ## Development
 
