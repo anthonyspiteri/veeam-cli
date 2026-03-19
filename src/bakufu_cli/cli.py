@@ -119,12 +119,41 @@ def cmd_auth_setup(args):
         make_default=args.default,
         insecure=bool(args.insecure),
     )
-    print(json.dumps(result, indent=2))
+    server = result.get("server") or ""
+    default_flag = " (default)" if args.default else ""
+    swagger_ver = result.get("swaggerVersion") or "unknown"
+    token_expiry = result.get("tokenExpiresIn")
+    print(f"Account '{args.account_name}' saved{default_flag}")
+    print(f"  Server   : {server}")
+    print(f"  Swagger  : {swagger_ver}")
+    if token_expiry:
+        print(f"  Token    : expires in {token_expiry}s")
 
 
 def cmd_auth_list(_args):
     data = list_accounts()
-    print(json.dumps(data, indent=2))
+    default_account = data.get("default")
+    accounts = data.get("accounts", {})
+    if not accounts:
+        print("No accounts configured. Run `bakufu auth setup <name>` to add one.")
+        return
+    headers = ["ACCOUNT", "SERVER", "USERNAME", "PASSWORD", "INSECURE", "DEFAULT"]
+    rows = []
+    for name, info in accounts.items():
+        rows.append([
+            name,
+            info.get("server") or "",
+            info.get("username") or "",
+            "stored" if info.get("passwordStored") else "missing",
+            "yes" if info.get("insecure") else "no",
+            "*" if name == default_account else "",
+        ])
+    col_widths = [max(len(str(r[i])) for r in ([headers] + rows)) for i in range(len(headers))]
+    fmt = "  ".join(f"{{:<{w}}}" for w in col_widths)
+    print(fmt.format(*headers))
+    print("  ".join("-" * w for w in col_widths))
+    for row in rows:
+        print(fmt.format(*row))
 
 
 def cmd_auth_default(args):
