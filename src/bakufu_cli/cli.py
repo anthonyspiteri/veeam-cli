@@ -14,7 +14,7 @@ from .token import ensure_token
 from .swagger import SwaggerSpec
 from .accounts import add_account, list_accounts, set_default
 from .mcp_server import serve
-from .mcp_helpers import run_workflow, WORKFLOWS
+from .mcp_helpers import run_workflow, run_helper, WORKFLOWS, HELPERS
 from .auth_setup import setup as auth_setup
 
 # When running as a PyInstaller frozen binary, bundled data files live under
@@ -471,13 +471,85 @@ def cmd_skills_list(_args):
     print(DOCS_SKILLS_PATH.read_text())
 
 
+def _schema_params_summary(schema: Dict[str, Any]) -> str:
+    """Return a compact human-readable param summary from a JSON schema object."""
+    props = schema.get("properties", {})
+    required = set(schema.get("required", []))
+    parts = []
+    for key, meta in props.items():
+        if key == "account":
+            continue
+        desc = meta.get("description", "")
+        if key in required:
+            parts.append(f"--{_flag(key)}  (required)")
+        else:
+            # shorten long descriptions to 50 chars
+            short = desc[:50] + "..." if len(desc) > 50 else desc
+            parts.append(f"--{_flag(key)}  [{short}]")
+    return "\n    ".join(parts) if parts else "--account  (optional)"
+
+
+def _flag(camel: str) -> str:
+    """Convert camelCase param name to kebab-case CLI flag."""
+    s = re.sub(r"([A-Z])", r"-\1", camel).lower().lstrip("-")
+    return s
+
+
+def _print_catalog(title: str, entries: Dict[str, Dict], strip_prefix: str = "bakufu_") -> None:
+    """Print a formatted catalog of workflows or helpers."""
+    rows = []
+    for full_key, meta in entries.items():
+        short_id = full_key[len(strip_prefix):] if full_key.startswith(strip_prefix) else full_key
+        desc = meta.get("description", "")
+        schema = meta.get("inputSchema", {})
+        required = [k for k in schema.get("required", []) if k != "account"]
+        optional = [k for k, v in schema.get("properties", {}).items()
+                    if k not in schema.get("required", []) and k != "account"]
+        req_str = "  ".join(f"--{_flag(k)}" for k in required) if required else ""
+        opt_str = "  ".join(f"[--{_flag(k)}]" for k in optional) if optional else ""
+        params = "  ".join(filter(None, [req_str, opt_str])) or "[no extra params]"
+        rows.append((short_id, desc, params))
+
+    if not rows:
+        print(f"No {title.lower()} found.")
+        return
+
+    id_w = max(len(r[0]) for r in rows)
+    desc_w = min(60, max(len(r[1]) for r in rows))
+    print(f"\n  {'NAME':<{id_w}}  {'DESCRIPTION':<{desc_w}}  PARAMS")
+    print(f"  {'-' * id_w}  {'-' * desc_w}  {'-' * 40}")
+    for short_id, desc, params in rows:
+        desc_trunc = desc[:desc_w - 3] + "..." if len(desc) > desc_w else desc
+        print(f"  {short_id:<{id_w}}  {desc_trunc:<{desc_w}}  {params}")
+    print()
+
+
 def cmd_workflow(args):
     if not args.workflow_id:
-        args._workflows_parser.print_help()
+        print("Curated multi-step workflows.\n")
+        print("Usage:  bakufu workflows <workflow> [flags]  [--describe]\n")
+        _print_catalog("Workflows", WORKFLOWS, strip_prefix="bakufu_workflows_")
+        print("  --account        Use a named account (overrides default)")
+        print("  --describe       Show full parameter schema for a workflow")
+        print("  --wait           Wait for async workflows to complete")
+        print("  --interval-ms    Poll interval when --wait is used (default 2000)")
+        print("  --timeout-ms     Max wait time when --wait is used (default 300000)")
+        print()
         return
+
     workflow_name = f"bakufu_workflows_{args.workflow_id}"
     if workflow_name not in WORKFLOWS:
         raise CliError("WORKFLOW_NOT_FOUND", f"Workflow not found: {args.workflow_id}")
+
+    if getattr(args, "describe", False):
+        meta = WORKFLOWS[workflow_name]
+        print(json.dumps({
+            "workflow": args.workflow_id,
+            "description": meta["description"],
+            "inputSchema": meta["inputSchema"],
+        }, indent=2))
+        return
+
     payload: Dict[str, Any] = {"account": args.account}
     if args.job_id:
         payload["jobId"] = args.job_id
@@ -490,6 +562,69 @@ def cmd_workflow(args):
         payload["intervalMs"] = int(getattr(args, "interval_ms", 2000) or 2000)
         payload["timeoutMs"] = int(getattr(args, "timeout_ms", 300000) or 300000)
     result = run_workflow(workflow_name, payload)
+    output = getattr(args, "output", "table")
+    if output == "raw":
+        print(json.dumps(result, separators=(",", ":")))
+        return
+    if output == "table":
+        rendered = _render_table(result)
+        if rendered is None and isinstance(result, dict):
+            rendered = _render_object(result)
+        if rendered:
+            print(rendered)
+            return
+    print(json.dumps(result, indent=2))
+
+
+def cmd_helpers_list(_args):
+    print("Low-level helpers — focused operations that may chain a few API calls.\n")
+    print("Usage:  bakufu helpers <helper> [flags]  [--describe]\n")
+    _print_catalog("Helpers", HELPERS)
+    print("  --account        Use a named account (overrides default)")
+    print("  --describe       Show full parameter schema for a helper")
+    print()
+
+
+def cmd_helper(args):
+    if not args.helper_id:
+        cmd_helpers_list(args)
+        return
+
+    helper_name = f"bakufu_{args.helper_id}"
+    if helper_name not in HELPERS:
+        raise CliError("HELPER_NOT_FOUND", f"Helper not found: {args.helper_id}",
+                       hint=f"Run `bakufu helpers` to list available helpers.")
+
+    if getattr(args, "describe", False):
+        meta = HELPERS[helper_name]
+        print(json.dumps({
+            "helper": args.helper_id,
+            "description": meta["description"],
+            "inputSchema": meta["inputSchema"],
+        }, indent=2))
+        return
+
+    payload: Dict[str, Any] = {"account": args.account}
+    if getattr(args, "name", None):
+        payload["name"] = args.name
+    if getattr(args, "job_id", None):
+        payload["jobId"] = args.job_id
+    if getattr(args, "session_id", None):
+        payload["sessionId"] = args.session_id
+    if getattr(args, "server_id", None):
+        payload["serverId"] = args.server_id
+    if getattr(args, "spec", None):
+        payload["spec"] = _parse_json_arg(args.spec)
+    if getattr(args, "schedule", None):
+        payload["schedule"] = _parse_json_arg(args.schedule)
+    if getattr(args, "storage", None):
+        payload["storage"] = _parse_json_arg(args.storage)
+    if getattr(args, "interval_ms", None):
+        payload["intervalMs"] = int(args.interval_ms)
+    if getattr(args, "timeout_ms", None):
+        payload["timeoutMs"] = int(args.timeout_ms)
+
+    result = run_helper(helper_name, payload)
     output = getattr(args, "output", "table")
     if output == "raw":
         print(json.dumps(result, separators=(",", ":")))
@@ -519,7 +654,7 @@ def _completion_script_bash() -> str:
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   cmd="${COMP_WORDS[1]}"
   subcmd="${COMP_WORDS[2]}"
-  local top="auth auth-setup auth-login call services operations run schema jobs sessions workflows skills mcp license completion getting-started version"
+  local top="auth auth-setup auth-login call services operations run schema jobs sessions workflows helpers skills mcp license completion getting-started version"
 
   if [[ $COMP_CWORD -eq 1 ]]; then
     COMPREPLY=( $(compgen -W "$top --account --insecure -h --help" -- "$cur") )
@@ -554,7 +689,14 @@ def _completion_script_bash() -> str:
       if [[ $COMP_CWORD -eq 2 ]]; then
         COMPREPLY=( $(compgen -W "investigateFailedJob createWasabiRepo capacityReport runSecurityAnalyzer validateImmutability" -- "$cur") )
       else
-        COMPREPLY=( $(compgen -W "--job-id --job-name --spec -h --help" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--job-id --job-name --spec --wait --interval-ms --timeout-ms --describe --json --raw -h --help" -- "$cur") )
+      fi
+      ;;
+    helpers)
+      if [[ $COMP_CWORD -eq 2 ]]; then
+        COMPREPLY=( $(compgen -W "jobs_startByName jobs_lastResult jobs_create jobs_updateSchedule sessions_follow sessions_logs repos_capacity repos_addWasabi cloudCredentials_add objectStorage_browse proxies_states sobr_list managedServers_rescan malwareDetection_scan" -- "$cur") )
+      else
+        COMPREPLY=( $(compgen -W "--name --job-id --session-id --server-id --spec --schedule --storage --interval-ms --timeout-ms --describe --json --raw -h --help" -- "$cur") )
       fi
       ;;
     run)
@@ -603,7 +745,7 @@ _bakufu() {
     cmds)
       _values 'command' \
         auth auth-setup auth-login call services operations run schema \
-        jobs sessions workflows skills mcp license completion getting-started version
+        jobs sessions workflows helpers skills mcp license completion getting-started version
       ;;
     args)
       case $words[2] in
@@ -613,6 +755,7 @@ _bakufu() {
         services) _values 'services command' list ;;
         skills) _values 'skills command' list ;;
         workflows) _values 'workflow' investigateFailedJob createWasabiRepo capacityReport runSecurityAnalyzer validateImmutability ;;
+        helpers) _values 'helper' jobs_startByName jobs_lastResult jobs_create jobs_updateSchedule sessions_follow sessions_logs repos_capacity repos_addWasabi cloudCredentials_add objectStorage_browse proxies_states sobr_list managedServers_rescan malwareDetection_scan ;;
         mcp) _values 'options' -s --services -e --helpers --no-helpers -w --workflows --no-workflows --insecure ;;
         run)
           if (( CURRENT == 3 )); then
@@ -1328,26 +1471,43 @@ def build_parser():
     sessions_logs.add_argument("--dry-run", action="store_true")
     sessions_logs.set_defaults(func=cmd_sessions_logs)
 
-    workflows = subparsers.add_parser("workflows", help="Curated recipes")
-    workflows.add_argument(
-        "workflow_id",
-        nargs="?",
-        choices=[
-            "investigateFailedJob",
-            "createWasabiRepo",
-            "capacityReport",
-            "runSecurityAnalyzer",
-            "validateImmutability",
-        ],
-    )
-    workflows.add_argument("--job-id")
-    workflows.add_argument("--job-name")
-    workflows.add_argument("--spec", help="JSON spec or @file")
-    workflows.add_argument("--wait", action="store_true", help="Wait for workflow completion (where supported)")
-    workflows.add_argument("--interval-ms", type=int, default=2000, help="Poll interval when --wait is used")
-    workflows.add_argument("--timeout-ms", type=int, default=300000, help="Max wait time when --wait is used")
+    _workflow_choices = [k.replace("bakufu_workflows_", "") for k in WORKFLOWS]
+    workflows = subparsers.add_parser("workflows", help="Curated multi-step workflows")
+    workflows.add_argument("workflow_id", nargs="?", choices=_workflow_choices,
+                           metavar="WORKFLOW")
+    workflows.add_argument("--job-id", help="Job UUID (investigateFailedJob)")
+    workflows.add_argument("--job-name", help="Exact job name (investigateFailedJob)")
+    workflows.add_argument("--spec", help="JSON spec or @file (createWasabiRepo)")
+    workflows.add_argument("--wait", action="store_true",
+                           help="Wait for async completion (runSecurityAnalyzer)")
+    workflows.add_argument("--interval-ms", type=int, default=2000,
+                           help="Poll interval ms when --wait is used (default 2000)")
+    workflows.add_argument("--timeout-ms", type=int, default=300000,
+                           help="Max wait ms when --wait is used (default 300000)")
+    workflows.add_argument("--describe", action="store_true",
+                           help="Show full parameter schema for the workflow")
     _add_output_flags(workflows)
-    workflows.set_defaults(func=cmd_workflow, _workflows_parser=workflows)
+    workflows.set_defaults(func=cmd_workflow)
+
+    _helper_choices = [k.replace("bakufu_", "") for k in HELPERS]
+    helpers_cmd = subparsers.add_parser("helpers", help="Low-level focused helpers")
+    helpers_cmd.add_argument("helper_id", nargs="?", choices=_helper_choices,
+                             metavar="HELPER")
+    helpers_cmd.add_argument("--name", help="Resource name (jobs_startByName)")
+    helpers_cmd.add_argument("--job-id", help="Job UUID")
+    helpers_cmd.add_argument("--session-id", help="Session UUID")
+    helpers_cmd.add_argument("--server-id", help="Managed server UUID")
+    helpers_cmd.add_argument("--spec", help="JSON spec or @file")
+    helpers_cmd.add_argument("--schedule", help="Schedule JSON or @file (jobs_updateSchedule)")
+    helpers_cmd.add_argument("--storage", help="Storage/retention JSON or @file (jobs_updateSchedule)")
+    helpers_cmd.add_argument("--interval-ms", type=int, default=None,
+                             help="Poll interval ms (sessions_follow, default 1000)")
+    helpers_cmd.add_argument("--timeout-ms", type=int, default=None,
+                             help="Max wait ms (sessions_follow, default 600000)")
+    helpers_cmd.add_argument("--describe", action="store_true",
+                             help="Show full parameter schema for the helper")
+    _add_output_flags(helpers_cmd)
+    helpers_cmd.set_defaults(func=cmd_helper)
 
     skills = subparsers.add_parser("skills", help="Skills library")
     skills.set_defaults(func=lambda _args: skills.print_help())

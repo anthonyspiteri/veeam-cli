@@ -479,3 +479,11 @@ def run_workflow(name: str, arguments: dict):
         return {"immutability": immutability}
 
     raise ValueError(f"Unknown workflow: {name}")
+
+
+def run_helper(name: str, arguments: dict):
+    """Dispatch a helper by its full key (e.g. 'bakufu_jobs_startByName')."""
+    if name not in HELPERS:
+        raise ValueError(f"Unknown helper: {name}")
+    handler = HELPERS[name]["handler"]
+    return handler(arguments)
