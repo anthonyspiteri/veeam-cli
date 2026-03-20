@@ -57,15 +57,58 @@ def _parse_json_arg(value: Optional[str]):
 
 
 def cmd_auth_token(args):
-    try:
-        ensure_token(force_refresh=args.refresh, account=args.account)
-    except Exception as exc:
+    from .token import load_cached_token, _token_is_valid, _parse_expires
+    from datetime import datetime, timezone
+
+    if args.refresh:
+        try:
+            data = ensure_token(force_refresh=True, account=args.account)
+        except Exception as exc:
+            raise CliError(
+                "AUTH_TOKEN_FAILED",
+                str(exc),
+                hint="Run `bakufu auth setup <account>` and verify network/DNS.",
+            )
+    else:
+        data = load_cached_token(account=args.account)
+
+    if not data:
         raise CliError(
-            "AUTH_TOKEN_FAILED",
-            str(exc),
-            hint="Run `bakufu auth setup <account>` and verify network/DNS.",
+            "AUTH_TOKEN_MISSING",
+            "No token found for this account.",
+            hint="Run `bakufu auth token --refresh` to obtain a token.",
         )
-    print("OK")
+
+    valid = _token_is_valid(data)
+    expires_raw = data.get(".expires") or data.get("expires_at") or ""
+    expires_at = _parse_expires(expires_raw) if expires_raw else None
+    if expires_at and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    status = "valid" if valid else "expired"
+    rows = [
+        ["Status", status],
+        ["Account", args.account or "(default)"],
+    ]
+    if expires_at:
+        now = datetime.now(timezone.utc)
+        remaining = expires_at - now
+        total_sec = int(remaining.total_seconds())
+        if total_sec > 0:
+            hours, rem = divmod(total_sec, 3600)
+            mins = rem // 60
+            rows.append(["Expires", expires_at.strftime("%Y-%m-%d %H:%M:%S UTC")])
+            rows.append(["Remaining", f"{hours}h {mins}m"])
+        else:
+            rows.append(["Expires", expires_at.strftime("%Y-%m-%d %H:%M:%S UTC")])
+            rows.append(["Remaining", "expired"])
+
+    if getattr(args, "show", False):
+        rows.append(["Token", data.get("access_token", "")])
+
+    col_width = max(len(r[0]) for r in rows)
+    for label, value in rows:
+        print(f"{label:<{col_width}}  {value}")
 
 
 def cmd_auth_login(args):
@@ -132,21 +175,30 @@ def cmd_auth_setup(args):
 
 
 def cmd_auth_list(_args):
+    from .token import load_cached_token, _token_is_valid
     data = list_accounts()
     default_account = data.get("default")
     accounts = data.get("accounts", {})
     if not accounts:
         print("No accounts configured. Run `bakufu auth setup <name>` to add one.")
         return
-    headers = ["ACCOUNT", "SERVER", "USERNAME", "PASSWORD", "INSECURE", "DEFAULT"]
+    headers = ["ACCOUNT", "SERVER", "USERNAME", "PASSWORD", "INSECURE", "TOKEN", "DEFAULT"]
     rows = []
     for name, info in accounts.items():
+        token_data = load_cached_token(account=name)
+        if not token_data:
+            token_status = "none"
+        elif _token_is_valid(token_data):
+            token_status = "valid"
+        else:
+            token_status = "expired"
         rows.append([
             name,
             info.get("server") or "",
             info.get("username") or "",
             "stored" if info.get("passwordStored") else "missing",
             "yes" if info.get("insecure") else "no",
+            token_status,
             "*" if name == default_account else "",
         ])
     col_widths = [max(len(str(r[i])) for r in ([headers] + rows)) for i in range(len(headers))]
@@ -1165,8 +1217,9 @@ def _add_auth_parser(subparsers):
     auth_default.add_argument("account_name")
     auth_default.set_defaults(func=cmd_auth_default)
 
-    auth_token = auth_sub.add_parser("token", help="Refresh/validate token for account")
-    auth_token.add_argument("--refresh", action="store_true", help="Force token refresh")
+    auth_token = auth_sub.add_parser("token", help="Show token status or refresh for account")
+    auth_token.add_argument("--refresh", action="store_true", help="Force a new token request")
+    auth_token.add_argument("--show", action="store_true", help="Print the raw access token value")
     auth_token.add_argument("--account", help="Use a named account")
     auth_token.set_defaults(func=cmd_auth_token)
 
