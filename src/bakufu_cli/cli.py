@@ -90,7 +90,7 @@ def cmd_auth_login(args):
         username,
         password,
         make_default=args.default,
-        insecure=bool(args.insecure),
+        insecure=bool(args.insecure) or os.environ.get("BAKUFU_INSECURE", "").lower() in ("1", "true", "yes", "on"),
     )
     print("OK")
 
@@ -111,13 +111,14 @@ def cmd_auth_setup(args):
         password = getpass.getpass("Password: ")
     if not server or not username or not password:
         raise CliError("AUTH_INPUT_INVALID", "Missing server/username/password")
+    insecure = bool(args.insecure) or os.environ.get("BAKUFU_INSECURE", "").lower() in ("1", "true", "yes", "on")
     result = auth_setup(
         server,
         username,
         password,
         args.account_name,
         make_default=args.default,
-        insecure=bool(args.insecure),
+        insecure=insecure,
     )
     server = result.get("server") or ""
     default_flag = " (default)" if args.default else ""
@@ -1451,6 +1452,7 @@ def _hoist_global_flags(argv):
     if account_value:
         prefix.extend(["--account", account_value])
     if insecure:
+        os.environ["BAKUFU_INSECURE"] = "1"
         prefix.append("--insecure")
     return prefix + remaining
 
