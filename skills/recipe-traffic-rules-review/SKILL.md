@@ -21,8 +21,8 @@ Capture network traffic rule configuration for operations review.
 
 ## Relevant Commands
 
-- `bakufu jobs list --pretty`
-- `bakufu sessions show <session-id> --pretty`
+- `bakufu jobs list`
+- `bakufu sessions show <session-id>`
 
 ## Instructions
 - Start with the highest-level workflow/command for this recipe.

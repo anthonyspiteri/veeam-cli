@@ -21,7 +21,7 @@ The Failover section defines paths and operations for managing failover.
 
 - `bakufu services list`
 - `bakufu operations --tag "Failover"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

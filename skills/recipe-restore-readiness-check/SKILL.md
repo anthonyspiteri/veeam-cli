@@ -22,10 +22,10 @@ Validate restore paths, mount servers, and key dependencies.
 
 ## Relevant Commands
 
-- `bakufu run RestorePoints GetAllRestorePoints --pretty`
-- `bakufu run MountServers GetAllMountServers --pretty`
-- `bakufu run Repositories GetAllRepositories --pretty`
-- `bakufu run Restore GetRestoreSummary --pretty`
+- `bakufu run RestorePoints GetAllRestorePoints`
+- `bakufu run MountServers GetAllMountServers`
+- `bakufu run Repositories GetAllRepositories`
+- `bakufu run Restore GetRestoreSummary`
 
 ## Instructions
 - Verify restore points exist for critical workloads and are within SLA age.

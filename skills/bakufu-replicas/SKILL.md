@@ -21,7 +21,7 @@ The Replicas section defines paths and operations for managing snapshot replicas
 
 - `bakufu services list`
 - `bakufu operations --tag "Replicas"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

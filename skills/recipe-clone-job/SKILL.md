@@ -20,9 +20,9 @@ Clone an existing backup job for testing or migration.
 
 ## Relevant Commands
 
-- `bakufu jobs list --pretty`
-- `bakufu run Jobs CloneJob --params '{"id": "<job-id>"}' --pretty`
-- `bakufu run Jobs GetJob --params '{"id": "<cloned-job-id>"}' --pretty`
+- `bakufu jobs list`
+- `bakufu run Jobs CloneJob --params '{"id": "<job-id>"}'`
+- `bakufu run Jobs GetJob --params '{"id": "<cloned-job-id>"}'`
 
 ## Instructions
 - Resolve the source job by name or ID before cloning.

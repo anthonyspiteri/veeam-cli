@@ -22,9 +22,9 @@ Add a vCenter, SCVMM, or Cloud Director server to the managed infrastructure.
 ## Relevant Commands
 
 - `bakufu schema CreateManagedServer`
-- `bakufu run ManagedServers CreateManagedServer --json @server-spec.json --pretty`
-- `bakufu run ManagedServers GetManagedServer --params '{"id": "<server-id>"}' --pretty`
-- `bakufu run InventoryBrowser GetVirtualInfrastructure --pretty`
+- `bakufu run ManagedServers CreateManagedServer --body @server-spec.json`
+- `bakufu run ManagedServers GetManagedServer --params '{"id": "<server-id>"}'`
+- `bakufu run InventoryBrowser GetVirtualInfrastructure`
 
 ## Instructions
 - Use `bakufu schema CreateManagedServer` to discover required fields (hostname, credentials, type).

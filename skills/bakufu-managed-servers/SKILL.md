@@ -21,7 +21,7 @@ The Managed Servers section defines paths and operations for managing servers. N
 
 - `bakufu services list`
 - `bakufu operations --tag "Managed Servers"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

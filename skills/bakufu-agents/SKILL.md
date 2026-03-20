@@ -21,7 +21,7 @@ The Agents section defines paths and operations for working with protection grou
 
 - `bakufu services list`
 - `bakufu operations --tag "Agents"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

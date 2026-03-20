@@ -21,10 +21,10 @@ Run SureBackup verification scan on backups and track completion.
 
 ## Relevant Commands
 
-- `bakufu jobs list --pretty`
-- `bakufu run Jobs StartJob --params '{"id": "<surebackup-job-id>"}' --pretty`
-- `bakufu sessions show <session-id> --pretty`
-- `bakufu sessions logs <session-id> --pretty`
+- `bakufu jobs list`
+- `bakufu run Jobs StartJob --params '{"id": "<surebackup-job-id>"}'`
+- `bakufu sessions show <session-id>`
+- `bakufu sessions logs <session-id>`
 
 ## Instructions
 - Identify existing SureBackupContentScan jobs or create one for the target backups.

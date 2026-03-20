@@ -21,7 +21,7 @@ The Active Directory Domains section defines paths and operations for managing A
 
 - `bakufu services list`
 - `bakufu operations --tag "Active Directory Domains"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

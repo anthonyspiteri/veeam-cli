@@ -21,7 +21,7 @@ The Restore section defines paths and operations for performing restore. NOTE In
 
 - `bakufu services list`
 - `bakufu operations --tag "Restore"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

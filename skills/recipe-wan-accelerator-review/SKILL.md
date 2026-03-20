@@ -19,7 +19,7 @@ List WAN accelerators and review cache configuration.
 
 ## Relevant Commands
 
-- `bakufu run WANAccelerators GetAllWanAccelerators --pretty`
+- `bakufu run WANAccelerators GetAllWanAccelerators`
 
 ## Instructions
 - List all WAN accelerators and verify cache folder and size settings.

@@ -21,7 +21,7 @@ The Users and Roles section defines paths and operations for managing Veeam Back
 
 - `bakufu services list`
 - `bakufu operations --tag "Users And Roles"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

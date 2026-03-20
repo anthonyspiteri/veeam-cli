@@ -19,7 +19,7 @@ Fetch session logs and surface failures.
 
 ## Relevant Commands
 
-- `bakufu sessions logs <session-id> --pretty`
+- `bakufu sessions logs <session-id>`
 
 ## Instructions
 - Filter to failed/warning records first to reduce noise.

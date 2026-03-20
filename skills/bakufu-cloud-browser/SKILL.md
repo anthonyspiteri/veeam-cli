@@ -21,7 +21,7 @@ The Cloud Browser section defines paths and operations for retrieving informatio
 
 - `bakufu services list`
 - `bakufu operations --tag "Cloud Browser"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

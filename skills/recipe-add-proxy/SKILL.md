@@ -22,9 +22,9 @@ Add a backup proxy to the infrastructure and configure task slots.
 ## Relevant Commands
 
 - `bakufu schema CreateProxy`
-- `bakufu run ManagedServers GetAllManagedServers --pretty`
-- `bakufu run Proxies CreateProxy --json @proxy-spec.json --pretty`
-- `bakufu run Proxies GetAllProxiesStates --pretty`
+- `bakufu run ManagedServers GetAllManagedServers`
+- `bakufu run Proxies CreateProxy --body @proxy-spec.json`
+- `bakufu run Proxies GetAllProxiesStates`
 
 ## Instructions
 - Verify the managed server is added and its components are up to date before proxy creation.

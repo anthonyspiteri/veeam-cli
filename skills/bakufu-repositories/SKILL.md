@@ -21,7 +21,7 @@ The Repositories section defines paths and operations for managing backup reposi
 
 - `bakufu services list`
 - `bakufu operations --tag "Repositories"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

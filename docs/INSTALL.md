@@ -129,7 +129,7 @@ Then:
 
 ```bash
 bakufu auth token --refresh
-bakufu jobs list --pretty
+bakufu jobs list
 ```
 
 ## Check for Updates

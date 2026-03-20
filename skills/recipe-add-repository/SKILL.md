@@ -22,9 +22,9 @@ Add a new backup repository to the infrastructure.
 ## Relevant Commands
 
 - `bakufu schema CreateRepository`
-- `bakufu run ManagedServers GetAllManagedServers --pretty`
-- `bakufu run Repositories CreateRepository --json @repo-spec.json --pretty`
-- `bakufu run Repositories GetAllRepositories --pretty`
+- `bakufu run ManagedServers GetAllManagedServers`
+- `bakufu run Repositories CreateRepository --body @repo-spec.json`
+- `bakufu run Repositories GetAllRepositories`
 
 ## Instructions
 - Ensure the target managed server is added and reachable before repository creation.

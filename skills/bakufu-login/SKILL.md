@@ -21,7 +21,7 @@ The authorization process involves obtaining an access token and a refresh token
 
 - `bakufu services list`
 - `bakufu operations --tag "Login"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

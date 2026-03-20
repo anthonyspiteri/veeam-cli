@@ -21,7 +21,7 @@ The Backups section defines paths and operations for managing backups that are c
 
 - `bakufu services list`
 - `bakufu operations --tag "Backups"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

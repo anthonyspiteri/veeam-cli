@@ -21,7 +21,7 @@ The Deployment section defines paths and operations for generating and downloadi
 
 - `bakufu services list`
 - `bakufu operations --tag "Deployment"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

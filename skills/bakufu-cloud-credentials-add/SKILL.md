@@ -20,7 +20,7 @@ Create cloud credentials for S3-compatible storage.
 
 ## Relevant Commands
 
-- `bakufu call /api/v1/cloudCredentials --method POST --json @creds.json --pretty`
+- `bakufu call /api/v1/cloudCredentials --method POST --body @creds.json`
 
 ## Instructions
 - Scope credentials to required buckets and operations only.

@@ -21,7 +21,7 @@ The Encryption section defines paths and operations for managing KMS servers and
 
 - `bakufu services list`
 - `bakufu operations --tag "Encryption"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

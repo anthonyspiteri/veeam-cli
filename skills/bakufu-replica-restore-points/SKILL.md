@@ -21,7 +21,7 @@ The Replica Restore Points section defines paths and operations for managing res
 
 - `bakufu services list`
 - `bakufu operations --tag "Replica Restore Points"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

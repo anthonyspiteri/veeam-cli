@@ -21,7 +21,7 @@ The Data Integration API section defines paths and operations for publishing dis
 
 - `bakufu services list`
 - `bakufu operations --tag "Data Integration Api"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

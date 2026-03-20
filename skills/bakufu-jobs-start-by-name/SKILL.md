@@ -20,7 +20,7 @@ Start a job by name and return session details.
 
 ## Relevant Commands
 
-- `bakufu jobs list --pretty`
+- `bakufu jobs list`
 - `bakufu workflows investigateFailedJob --job-name "<name>"`
 
 ## Instructions

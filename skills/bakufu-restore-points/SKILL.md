@@ -21,7 +21,7 @@ The Restore Points section defines paths and operations for retrieving restore p
 
 - `bakufu services list`
 - `bakufu operations --tag "Restore Points"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

@@ -21,7 +21,7 @@ The Connection section defines a path and operation for retrieving a TLS certifi
 
 - `bakufu services list`
 - `bakufu operations --tag "Connection"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

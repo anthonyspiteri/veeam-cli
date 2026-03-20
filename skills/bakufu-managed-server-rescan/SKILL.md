@@ -20,8 +20,8 @@ Rescan a managed server or all servers and return result state.
 
 ## Relevant Commands
 
-- `bakufu run ManagedServers RescanManagedServer --params '{"id": "<server-id>"}' --pretty`
-- `bakufu run ManagedServers RescanAllManagedServers --pretty`
+- `bakufu run ManagedServers RescanManagedServer --params '{"id": "<server-id>"}'`
+- `bakufu run ManagedServers RescanAllManagedServers`
 
 ## Instructions
 - Trigger rescan after infrastructure changes (credentials, network, or component updates).

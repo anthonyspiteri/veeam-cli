@@ -169,7 +169,7 @@ Account management:
 bakufu auth list
 bakufu auth default lab
 bakufu auth token --refresh
-bakufu --account lab jobs list --pretty
+bakufu --account lab jobs list
 ```
 
 Credential storage:

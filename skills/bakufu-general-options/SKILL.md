@@ -21,7 +21,7 @@ The General Options section defines paths and operations for retrieving and edit
 
 - `bakufu services list`
 - `bakufu operations --tag "General Options"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

@@ -19,7 +19,7 @@ List scale-out backup repositories with tier details.
 
 ## Relevant Commands
 
-- `bakufu run Repositories GetAllScaleOutRepositories --pretty`
+- `bakufu run Repositories GetAllScaleOutRepositories`
 
 ## Instructions
 - Use SOBR listing to understand performance and capacity tier assignments.

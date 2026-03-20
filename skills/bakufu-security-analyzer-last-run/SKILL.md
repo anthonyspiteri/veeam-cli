@@ -20,7 +20,7 @@ Get the latest Security Analyzer run state and findings.
 ## Relevant Commands
 
 - `bakufu --help`
-- `bakufu run <Tag> <OperationId> --pretty`
+- `bakufu run <Tag> <OperationId>`
 
 ## Instructions
 - Use this helper to perform focused task execution with structured output.

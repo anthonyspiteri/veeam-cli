@@ -21,7 +21,7 @@ The Backup Objects section defines paths and operations for managing backup obje
 
 - `bakufu services list`
 - `bakufu operations --tag "Backup Objects"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

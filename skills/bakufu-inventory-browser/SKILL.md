@@ -21,7 +21,7 @@ The Inventory Browser section defines paths and operations that allow you to&#58
 
 - `bakufu services list`
 - `bakufu operations --tag "Inventory Browser"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

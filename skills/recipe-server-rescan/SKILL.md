@@ -21,9 +21,9 @@ Rescan managed servers and validate component versions.
 
 ## Relevant Commands
 
-- `bakufu run ManagedServers GetAllManagedServers --pretty`
-- `bakufu run ManagedServers RescanManagedServer --params '{"id": "<server-id>"}' --pretty`
-- `bakufu sessions show <session-id> --pretty`
+- `bakufu run ManagedServers GetAllManagedServers`
+- `bakufu run ManagedServers RescanManagedServer --params '{"id": "<server-id>"}'`
+- `bakufu sessions show <session-id>`
 
 ## Instructions
 - List managed servers and identify targets requiring rescan.

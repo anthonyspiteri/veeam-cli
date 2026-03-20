@@ -19,8 +19,8 @@ Poll a session until terminal state.
 
 ## Relevant Commands
 
-- `bakufu sessions show <session-id> --pretty`
-- `bakufu sessions logs <session-id> --pretty`
+- `bakufu sessions show <session-id>`
+- `bakufu sessions logs <session-id>`
 
 ## Instructions
 - Poll active sessions until terminal state before reporting completion.

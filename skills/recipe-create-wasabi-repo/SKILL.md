@@ -23,8 +23,8 @@ Create Wasabi credentials and repository mapping.
 ## Relevant Commands
 
 - `bakufu workflows createWasabiRepo --spec @repo.json`
-- `bakufu call /api/v1/cloudBrowser --method POST --json @browse.json --pretty`
-- `bakufu run Repositories GetAllRepositories --pretty`
+- `bakufu call /api/v1/cloudBrowser --method POST --body @browse.json`
+- `bakufu run Repositories GetAllRepositories`
 
 ## Instructions
 - Create or verify cloud credentials before repository creation.

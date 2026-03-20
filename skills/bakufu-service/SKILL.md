@@ -21,7 +21,7 @@ The Service section defines paths and operations for retrieving information abou
 
 - `bakufu services list`
 - `bakufu operations --tag "Service"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

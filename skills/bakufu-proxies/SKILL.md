@@ -21,7 +21,7 @@ The Proxies section defines paths and operations for managing backup proxies. NO
 
 - `bakufu services list`
 - `bakufu operations --tag "Proxies"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

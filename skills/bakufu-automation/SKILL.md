@@ -21,7 +21,7 @@ The Automation section defines paths and operations for granular import and expo
 
 - `bakufu services list`
 - `bakufu operations --tag "Automation"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

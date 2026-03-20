@@ -21,7 +21,7 @@ The License section defines paths and operations for installing and managing lic
 
 - `bakufu services list`
 - `bakufu operations --tag "License"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

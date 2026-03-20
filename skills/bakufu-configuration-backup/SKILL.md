@@ -21,7 +21,7 @@ The Configuration Backup section defines paths and operations for managing backu
 
 - `bakufu services list`
 - `bakufu operations --tag "Configuration Backup"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

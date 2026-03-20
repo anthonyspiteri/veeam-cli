@@ -21,7 +21,7 @@ Create a new backup job from a JSON spec.
 
 ## Relevant Commands
 
-- `bakufu run Jobs CreateJob --json @job-spec.json --pretty`
+- `bakufu run Jobs CreateJob --body @job-spec.json`
 - `bakufu schema CreateJob`
 
 ## Instructions

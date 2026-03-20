@@ -19,7 +19,7 @@ Browse object storage regions, buckets, and folders.
 
 ## Relevant Commands
 
-- `bakufu call /api/v1/cloudBrowser --method POST --json @browse.json --pretty`
+- `bakufu call /api/v1/cloudBrowser --method POST --body @browse.json`
 
 ## Instructions
 - Use browse to validate target paths before repository create/update.

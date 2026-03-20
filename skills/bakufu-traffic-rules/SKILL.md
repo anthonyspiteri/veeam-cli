@@ -21,7 +21,7 @@ The Traffic Rules section defines paths and operations for retrieving and editin
 
 - `bakufu services list`
 - `bakufu operations --tag "Traffic Rules"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

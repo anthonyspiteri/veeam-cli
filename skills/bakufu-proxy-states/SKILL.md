@@ -19,8 +19,8 @@ Get backup proxy states and task slot utilization.
 
 ## Relevant Commands
 
-- `bakufu run Proxies GetAllProxiesStates --pretty`
-- `bakufu run Proxies GetAllProxies --pretty`
+- `bakufu run Proxies GetAllProxiesStates`
+- `bakufu run Proxies GetAllProxies`
 
 ## Instructions
 - Use proxy states to assess operational readiness before scheduling intensive jobs.

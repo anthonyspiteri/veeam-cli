@@ -21,9 +21,9 @@ Review SOBR extent states, capacity tier offload, and maintenance mode.
 
 ## Relevant Commands
 
-- `bakufu run Repositories GetAllScaleOutRepositories --pretty`
+- `bakufu run Repositories GetAllScaleOutRepositories`
 - `bakufu workflows capacityReport`
-- `bakufu run Repositories GetAllRepositoriesStates --pretty`
+- `bakufu run Repositories GetAllRepositoriesStates`
 
 ## Instructions
 - List all SOBRs and their extent configurations first.

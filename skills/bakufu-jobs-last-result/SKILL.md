@@ -20,8 +20,8 @@ Get latest job session result and status.
 
 ## Relevant Commands
 
-- `bakufu jobs list --pretty`
-- `bakufu sessions show <session-id> --pretty`
+- `bakufu jobs list`
+- `bakufu sessions show <session-id>`
 
 ## Instructions
 - Resolve the latest session for the target job before escalation.

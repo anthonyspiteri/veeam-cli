@@ -20,7 +20,7 @@ Summarize repository capacity and free space.
 ## Relevant Commands
 
 - `bakufu workflows capacityReport`
-- `bakufu run Repositories GetAllRepositories --pretty`
+- `bakufu run Repositories GetAllRepositories`
 
 ## Instructions
 - Assess free space and growth patterns before approving policy expansion.

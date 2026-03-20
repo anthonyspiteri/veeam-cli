@@ -22,8 +22,8 @@ Start a failed job again and monitor session completion.
 ## Relevant Commands
 
 - `bakufu workflows investigateFailedJob`
-- `bakufu jobs list --pretty`
-- `bakufu sessions show <session-id> --pretty`
+- `bakufu jobs list`
+- `bakufu sessions show <session-id>`
 
 ## Instructions
 - Start with the highest-level workflow/command for this recipe.

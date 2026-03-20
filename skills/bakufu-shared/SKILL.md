@@ -21,7 +21,7 @@ Common auth, config, and Swagger-driven endpoint conventions.
 
 - `bakufu services list`
 - `bakufu operations --tag "Shared"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

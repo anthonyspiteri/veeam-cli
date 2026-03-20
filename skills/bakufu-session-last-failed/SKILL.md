@@ -20,7 +20,7 @@ Find the most recent failed session for a job.
 ## Relevant Commands
 
 - `bakufu --help`
-- `bakufu run <Tag> <OperationId> --pretty`
+- `bakufu run <Tag> <OperationId>`
 
 ## Instructions
 - Use this helper to perform focused task execution with structured output.

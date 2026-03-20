@@ -23,9 +23,9 @@ Find the latest failed job session and collect logs.
 ## Relevant Commands
 
 - `bakufu workflows investigateFailedJob --job-name "<name>"`
-- `bakufu jobs list --pretty`
-- `bakufu sessions show <session-id> --pretty`
-- `bakufu sessions logs <session-id> --pretty`
+- `bakufu jobs list`
+- `bakufu sessions show <session-id>`
+- `bakufu sessions logs <session-id>`
 
 ## Instructions
 - Start with the investigateFailedJob workflow to get the latest failure context.

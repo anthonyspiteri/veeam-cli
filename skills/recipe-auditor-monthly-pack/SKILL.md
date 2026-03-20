@@ -25,10 +25,10 @@ Build a monthly compliance evidence pack for auditors.
 
 - `bakufu workflows capacityReport`
 - `bakufu workflows validateImmutability`
-- `bakufu run Security GetBestPracticesComplianceResult --pretty`
-- `bakufu run Security GetFourEyesAuthorizationEvents --pretty`
-- `bakufu run License GetLicense --pretty`
-- `bakufu run Sessions GetAllSessions --params '{"limit": 500}' --page-all --pretty`
+- `bakufu run Security GetBestPracticesComplianceResult`
+- `bakufu run Security GetFourEyesAuthorizationEvents`
+- `bakufu run License GetLicense`
+- `bakufu run Sessions GetAllSessions --params '{"limit": 500}' --page-all`
 
 ## Instructions
 - Collect evidence from capacity, immutability, security, and license domains.

@@ -21,7 +21,7 @@ The Sessions section defines paths and operations for managing sessions (except 
 
 - `bakufu services list`
 - `bakufu operations --tag "Sessions"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

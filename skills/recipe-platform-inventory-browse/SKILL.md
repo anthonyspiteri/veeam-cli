@@ -20,9 +20,9 @@ Browse virtualization infrastructure hierarchy (vSphere, Hyper-V, Cloud Director
 
 ## Relevant Commands
 
-- `bakufu run InventoryBrowser GetVirtualInfrastructure --pretty`
-- `bakufu run InventoryBrowser GetVmwareHosts --params '{"hostId": "<host-id>"}' --pretty`
-- `bakufu run ManagedServers GetAllManagedServers --pretty`
+- `bakufu run InventoryBrowser GetVirtualInfrastructure`
+- `bakufu run InventoryBrowser GetVmwareHosts --params '{"hostId": "<host-id>"}'`
+- `bakufu run ManagedServers GetAllManagedServers`
 
 ## Instructions
 - List all virtualization servers to identify vSphere, Hyper-V, and Cloud Director platforms.

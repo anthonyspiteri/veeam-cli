@@ -21,9 +21,9 @@ Summarize success, warning, and failed jobs in the last 24 hours.
 
 ## Relevant Commands
 
-- `bakufu jobs list --pretty`
-- `bakufu run Jobs GetAllJobsStates --pretty`
-- `bakufu run Sessions GetAllSessions --params '{"limit": 100}' --pretty`
+- `bakufu jobs list`
+- `bakufu run Jobs GetAllJobsStates`
+- `bakufu run Sessions GetAllSessions --params '{"limit": 100}'`
 
 ## Instructions
 - List all jobs and their last result states to build the 24-hour summary.

@@ -21,7 +21,7 @@ The Mount Servers section defines paths and operations for managing mount server
 
 - `bakufu services list`
 - `bakufu operations --tag "Mount Servers"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

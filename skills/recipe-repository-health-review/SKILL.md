@@ -20,7 +20,7 @@ Review repository connectivity, component versions, and capacity status.
 
 ## Relevant Commands
 
-- `bakufu run Repositories GetAllRepositories --pretty`
+- `bakufu run Repositories GetAllRepositories`
 - `bakufu workflows capacityReport`
 
 ## Instructions

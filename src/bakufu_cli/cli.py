@@ -237,8 +237,44 @@ def cmd_run(args):
         if args.dry_run:
             print(json.dumps(pages, indent=2))
             return
+        output = getattr(args, "output", "table")
+        if output == "raw":
+            for page in pages:
+                print(json.dumps(page, separators=(",", ":")))
+            return
+        if output == "json":
+            print(json.dumps(pages, indent=2))
+            return
+
+        # Default table mode: merge known list payloads across pages, then render once.
+        merged_rows = []
         for page in pages:
-            print(json.dumps(page))
+            if isinstance(page, dict):
+                extracted = False
+                for field in ("data", "items", "records", "workloads", "tenantResources"):
+                    candidate = page.get(field)
+                    if isinstance(candidate, list) and candidate and all(isinstance(item, dict) for item in candidate):
+                        merged_rows.extend(candidate)
+                        extracted = True
+                        break
+                if extracted:
+                    continue
+                for value in page.values():
+                    if isinstance(value, list) and value and all(isinstance(item, dict) for item in value):
+                        merged_rows.extend(value)
+                        extracted = True
+                        break
+                if not extracted:
+                    merged_rows.append(page)
+            elif isinstance(page, list) and all(isinstance(item, dict) for item in page):
+                merged_rows.extend(page)
+
+        if merged_rows:
+            rendered = _render_table({"data": merged_rows})
+            if rendered:
+                print(rendered)
+                return
+        print(json.dumps(pages, indent=2))
         return
 
     response = call_api(
@@ -269,7 +305,51 @@ def cmd_schema(args):
         "requestBody": op.request_body,
         "responses": op.responses,
     }
-    print(json.dumps(result, indent=2))
+    output = getattr(args, "output", "table")
+    if output == "raw":
+        print(json.dumps(result, separators=(",", ":")))
+        return
+    if output == "json":
+        print(json.dumps(result, indent=2))
+        return
+
+    summary = _render_object(
+        {
+            "operationId": result["operationId"],
+            "method": result["method"],
+            "path": result["path"],
+            "summary": result["summary"] or "",
+        }
+    )
+    if summary:
+        print(summary)
+
+    parameters = result.get("parameters") or []
+    if parameters:
+        print("\nparameters")
+        rendered_params = _render_table(parameters)
+        if rendered_params:
+            print(rendered_params)
+        else:
+            print(json.dumps(parameters, indent=2))
+
+    request_body = result.get("requestBody")
+    if request_body:
+        print("\nrequestBody")
+        rendered_body = _render_object(request_body) if isinstance(request_body, dict) else None
+        if rendered_body:
+            print(rendered_body)
+        else:
+            print(json.dumps(request_body, indent=2))
+
+    responses = result.get("responses")
+    if responses:
+        print("\nresponses")
+        rendered_responses = _render_object(responses) if isinstance(responses, dict) else None
+        if rendered_responses:
+            print(rendered_responses)
+        else:
+            print(json.dumps(responses, indent=2))
 
 
 def cmd_jobs_list(args):
@@ -356,6 +436,8 @@ def cmd_workflow(args):
         return
     if output == "table":
         rendered = _render_table(result)
+        if rendered is None and isinstance(result, dict):
+            rendered = _render_object(result)
         if rendered:
             print(rendered)
             return
@@ -530,7 +612,7 @@ def cmd_getting_started(args):
                 "bakufu license show --account demo-lab",
                 "bakufu workflows capacityReport --account demo-lab",
                 "bakufu workflows validateImmutability --account demo-lab",
-                "bakufu run Repositories GetAllRepositories --account demo-lab --formatted table",
+                "bakufu run Repositories GetAllRepositories --account demo-lab",
             ],
             "recipes": [
                 "recipe-capacity-report",
@@ -548,10 +630,10 @@ def cmd_getting_started(args):
             ],
             "commands": [
                 "bakufu auth token --refresh --account demo-lab",
-                "bakufu run Jobs GetAllJobs --account demo-lab --formatted table",
+                "bakufu run Jobs GetAllJobs --account demo-lab",
                 "bakufu workflows investigateFailedJob --job-name \"Demo Nightly Backup\" --account demo-lab",
-                "bakufu run Sessions GetAllSessions --params '{\"limit\":20}' --account demo-lab --pretty",
-                "bakufu sessions logs <session-id> --account demo-lab --pretty",
+                "bakufu run Sessions GetAllSessions --params '{\"limit\":20}' --account demo-lab",
+                "bakufu sessions logs <session-id> --account demo-lab",
             ],
             "recipes": [
                 "recipe-investigate-failed-job",
@@ -570,8 +652,8 @@ def cmd_getting_started(args):
             "commands": [
                 "bakufu auth token --refresh --account demo-lab",
                 "bakufu workflows runSecurityAnalyzer --account demo-lab",
-                "bakufu run Security GetBestPracticesComplianceResult --account demo-lab --pretty",
-                "bakufu run Malware\\ Detection GetAllMalwareEvents --account demo-lab --pretty",
+                "bakufu run Security GetBestPracticesComplianceResult --account demo-lab",
+                "bakufu run Malware\\ Detection GetAllMalwareEvents --account demo-lab",
                 "bakufu workflows validateImmutability --account demo-lab",
             ],
             "recipes": [
@@ -590,10 +672,10 @@ def cmd_getting_started(args):
             ],
             "commands": [
                 "bakufu auth token --refresh --account demo-lab",
-                "bakufu run Restore\\ Points GetAllRestorePoints --account demo-lab --pretty",
-                "bakufu run Replicas GetAllReplicas --account demo-lab --pretty",
-                "bakufu run Failover GetAllFailoverPlans --account demo-lab --pretty",
-                "bakufu run Failback GetAllFailbackPlans --account demo-lab --pretty",
+                "bakufu run Restore\\ Points GetAllRestorePoints --account demo-lab",
+                "bakufu run Replicas GetAllReplicas --account demo-lab",
+                "bakufu run Failover GetAllFailoverPlans --account demo-lab",
+                "bakufu run Failback GetAllFailbackPlans --account demo-lab",
             ],
             "recipes": [
                 "recipe-restore-point-coverage",
@@ -611,9 +693,9 @@ def cmd_getting_started(args):
             ],
             "commands": [
                 "bakufu auth token --refresh --account demo-lab",
-                "bakufu run Sessions GetAllSessions --params '{\"limit\":50}' --account demo-lab --pretty",
-                "bakufu run Security GetAllAuthorizationEvents --account demo-lab --pretty",
-                "bakufu license show --account demo-lab --pretty",
+                "bakufu run Sessions GetAllSessions --params '{\"limit\":50}' --account demo-lab",
+                "bakufu run Security GetAllAuthorizationEvents --account demo-lab",
+                "bakufu license show --account demo-lab",
                 "bakufu workflows capacityReport --account demo-lab",
             ],
             "recipes": [
@@ -673,7 +755,7 @@ bakufu schema GetAllJobs
 
 # 5) output modes
 bakufu GetServerTime --raw
-bakufu run Services GetAllServices --formatted table --account demo-lab
+bakufu run Services GetAllServices --account demo-lab
 
 # 6) workflow recipes
 bakufu workflows capacityReport --account demo-lab
@@ -715,7 +797,7 @@ bakufu mcp --services Service,Jobs,Sessions --helpers --workflows
 
 6) Output modes:
    bakufu GetServerTime --raw
-   bakufu run Services GetAllServices --formatted table --account demo-lab
+   bakufu run Services GetAllServices --account demo-lab
 
 7) Recipes:
    bakufu workflows capacityReport --account demo-lab
@@ -869,7 +951,7 @@ def _raise_for_http_error(response: Dict[str, Any]) -> None:
     elif status == 404:
         hint = "Endpoint or object not found. Validate operation/path and object IDs."
     elif "License restrictions apply" in body:
-        hint = "Install a valid VBR license first: `bakufu license install-file /path/to/license.lic --pretty`."
+        hint = "Install a valid VBR license first: `bakufu license install-file /path/to/license.lic`."
     elif "SSL certificate problem" in body:
         hint = "Certificate verification failed. Use trusted certs, or explicitly opt in with `--insecure`."
 
@@ -1151,6 +1233,7 @@ def build_parser():
 
     schema = subparsers.add_parser("schema", help="Show request/response schema for operationId")
     schema.add_argument("operation_id")
+    _add_output_flags(schema)
     schema.set_defaults(func=cmd_schema)
 
     jobs = subparsers.add_parser("jobs", help="Job operations")

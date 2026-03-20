@@ -21,7 +21,7 @@ The Backup Browser section defines paths and operations that allow you to&#58; B
 
 - `bakufu services list`
 - `bakufu operations --tag "Backup Browsers"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

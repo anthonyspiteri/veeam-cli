@@ -21,7 +21,7 @@ The Security section defines paths and operations for managing Security & Compli
 
 - `bakufu services list`
 - `bakufu operations --tag "Security"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

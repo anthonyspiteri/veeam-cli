@@ -21,7 +21,7 @@ The Tasks section defines paths and operations for managing tasks that are used 
 
 - `bakufu services list`
 - `bakufu operations --tag "Tasks"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

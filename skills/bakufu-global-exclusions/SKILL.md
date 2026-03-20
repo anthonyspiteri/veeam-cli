@@ -21,7 +21,7 @@ The Global Exclusions section defines paths and operations for managing which VM
 
 - `bakufu services list`
 - `bakufu operations --tag "Global Exclusions"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

@@ -21,7 +21,7 @@ The Log Export section defines paths and operations for exporting the backup ser
 
 - `bakufu services list`
 - `bakufu operations --tag "Log Export"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

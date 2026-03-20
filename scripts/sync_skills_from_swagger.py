@@ -77,7 +77,7 @@ def skill_frontmatter(name: str, description: str, category: str, requires_skill
 helper_profiles = {
     'bakufu-jobs-start-by-name': {
         'requires': ['bakufu-jobs', 'bakufu-sessions'],
-        'commands': ['bakufu jobs list --pretty', 'bakufu workflows investigateFailedJob --job-name "<name>"'],
+        'commands': ['bakufu jobs list', 'bakufu workflows investigateFailedJob --job-name "<name>"'],
         'instructions': [
             'Resolve the exact job name before start to avoid launching the wrong workload.',
             'Capture returned session identifiers for follow-up checks.',
@@ -90,7 +90,7 @@ helper_profiles = {
     },
     'bakufu-jobs-last-result': {
         'requires': ['bakufu-jobs', 'bakufu-sessions'],
-        'commands': ['bakufu jobs list --pretty', 'bakufu sessions show <session-id> --pretty'],
+        'commands': ['bakufu jobs list', 'bakufu sessions show <session-id>'],
         'instructions': [
             'Resolve the latest session for the target job before escalation.',
             'Use session state and result together; state alone is not enough.',
@@ -103,7 +103,7 @@ helper_profiles = {
     },
     'bakufu-session-follow': {
         'requires': ['bakufu-sessions'],
-        'commands': ['bakufu sessions show <session-id> --pretty', 'bakufu sessions logs <session-id> --pretty'],
+        'commands': ['bakufu sessions show <session-id>', 'bakufu sessions logs <session-id>'],
         'instructions': [
             'Poll active sessions until terminal state before reporting completion.',
             'Stop polling only on terminal states or timeout.',
@@ -116,7 +116,7 @@ helper_profiles = {
     },
     'bakufu-session-logs': {
         'requires': ['bakufu-sessions'],
-        'commands': ['bakufu sessions logs <session-id> --pretty'],
+        'commands': ['bakufu sessions logs <session-id>'],
         'instructions': [
             'Filter to failed/warning records first to reduce noise.',
             'Correlate task errors with infrastructure objects before remediation.',
@@ -129,7 +129,7 @@ helper_profiles = {
     },
     'bakufu-repo-capacity': {
         'requires': ['bakufu-repositories'],
-        'commands': ['bakufu workflows capacityReport', 'bakufu run Repositories GetAllRepositories --pretty'],
+        'commands': ['bakufu workflows capacityReport', 'bakufu run Repositories GetAllRepositories'],
         'instructions': [
             'Assess free space and growth patterns before approving policy expansion.',
             'Highlight repositories near threshold with concrete remediation.',
@@ -155,7 +155,7 @@ helper_profiles = {
     },
     'bakufu-cloud-credentials-add': {
         'requires': ['bakufu-credentials', 'bakufu-cloud-browser'],
-        'commands': ['bakufu call /api/v1/cloudCredentials --method POST --json @creds.json --pretty'],
+        'commands': ['bakufu call /api/v1/cloudCredentials --method POST --body @creds.json'],
         'instructions': [
             'Scope credentials to required buckets and operations only.',
             'Test credential access with object storage browse before production use.',
@@ -168,7 +168,7 @@ helper_profiles = {
     },
     'bakufu-object-storage-browse': {
         'requires': ['bakufu-cloud-browser'],
-        'commands': ['bakufu call /api/v1/cloudBrowser --method POST --json @browse.json --pretty'],
+        'commands': ['bakufu call /api/v1/cloudBrowser --method POST --body @browse.json'],
         'instructions': [
             'Use browse to validate target paths before repository create/update.',
             'Confirm bucket and folder paths exactly match policy expectations.',
@@ -182,8 +182,8 @@ helper_profiles = {
     'bakufu-proxy-states': {
         'requires': ['bakufu-proxies'],
         'commands': [
-            'bakufu run Proxies GetAllProxiesStates --pretty',
-            'bakufu run Proxies GetAllProxies --pretty',
+            'bakufu run Proxies GetAllProxiesStates',
+            'bakufu run Proxies GetAllProxies',
         ],
         'instructions': [
             'Use proxy states to assess operational readiness before scheduling intensive jobs.',
@@ -198,7 +198,7 @@ helper_profiles = {
     'bakufu-sobr-list': {
         'requires': ['bakufu-repositories'],
         'commands': [
-            'bakufu run Repositories GetAllScaleOutRepositories --pretty',
+            'bakufu run Repositories GetAllScaleOutRepositories',
         ],
         'instructions': [
             'Use SOBR listing to understand performance and capacity tier assignments.',
@@ -213,8 +213,8 @@ helper_profiles = {
     'bakufu-managed-server-rescan': {
         'requires': ['bakufu-managed-servers', 'bakufu-sessions'],
         'commands': [
-            'bakufu run ManagedServers RescanManagedServer --params \'{"id": "<server-id>"}\' --pretty',
-            'bakufu run ManagedServers RescanAllManagedServers --pretty',
+            'bakufu run ManagedServers RescanManagedServer --params \'{"id": "<server-id>"}\'',
+            'bakufu run ManagedServers RescanAllManagedServers',
         ],
         'instructions': [
             'Trigger rescan after infrastructure changes (credentials, network, or component updates).',
@@ -229,7 +229,7 @@ helper_profiles = {
     'bakufu-job-create': {
         'requires': ['bakufu-jobs', 'bakufu-repositories', 'bakufu-inventory-browser'],
         'commands': [
-            'bakufu run Jobs CreateJob --json @job-spec.json --pretty',
+            'bakufu run Jobs CreateJob --body @job-spec.json',
             'bakufu schema CreateJob',
         ],
         'instructions': [
@@ -245,8 +245,8 @@ helper_profiles = {
     'bakufu-job-schedule-update': {
         'requires': ['bakufu-jobs'],
         'commands': [
-            'bakufu run Jobs GetJob --params \'{"id": "<job-id>"}\' --pretty',
-            'bakufu run Jobs UpdateJob --params \'{"id": "<job-id>"}\' --json @patch.json --pretty',
+            'bakufu run Jobs GetJob --params \'{"id": "<job-id>"}\'',
+            'bakufu run Jobs UpdateJob --params \'{"id": "<job-id>"}\' --body @patch.json',
         ],
         'instructions': [
             'GET the current job configuration first; modify only schedule and retention fields.',
@@ -261,8 +261,8 @@ helper_profiles = {
     'bakufu-malware-scan': {
         'requires': ['bakufu-malware-detection', 'bakufu-sessions'],
         'commands': [
-            'bakufu run MalwareDetection ScanBackup --json @scan-spec.json --pretty',
-            'bakufu run MalwareDetection GetAllMalwareEvents --pretty',
+            'bakufu run MalwareDetection ScanBackup --body @scan-spec.json',
+            'bakufu run MalwareDetection GetAllMalwareEvents',
         ],
         'instructions': [
             'Specify target backup objects and scan method (antivirus or YARA) in the spec.',
@@ -280,7 +280,7 @@ helper_profiles = {
 def _default_helper_profile(name: str) -> dict:
     return {
         'requires': ['bakufu-shared'],
-        'commands': ['bakufu --help', 'bakufu run <Tag> <OperationId> --pretty'],
+        'commands': ['bakufu --help', 'bakufu run <Tag> <OperationId>'],
         'instructions': [
             'Use this helper to perform focused task execution with structured output.',
             'Confirm prerequisites and identifiers before issuing writes.',
@@ -308,9 +308,9 @@ recipe_profiles = {
         'requires': ['bakufu-jobs', 'bakufu-sessions', 'bakufu-session-logs', 'bakufu-session-last-failed'],
         'commands': [
             'bakufu workflows investigateFailedJob --job-name "<name>"',
-            'bakufu jobs list --pretty',
-            'bakufu sessions show <session-id> --pretty',
-            'bakufu sessions logs <session-id> --pretty',
+            'bakufu jobs list',
+            'bakufu sessions show <session-id>',
+            'bakufu sessions logs <session-id>',
         ],
         'instructions': [
             'Start with the investigateFailedJob workflow to get the latest failure context.',
@@ -326,9 +326,9 @@ recipe_profiles = {
     'recipe-daily-job-health': {
         'requires': ['bakufu-jobs', 'bakufu-sessions', 'bakufu-jobs-last-result'],
         'commands': [
-            'bakufu jobs list --pretty',
-            'bakufu run Jobs GetAllJobsStates --pretty',
-            'bakufu run Sessions GetAllSessions --params \'{"limit": 100}\' --pretty',
+            'bakufu jobs list',
+            'bakufu run Jobs GetAllJobsStates',
+            'bakufu run Sessions GetAllSessions --params \'{"limit": 100}\'',
         ],
         'instructions': [
             'List all jobs and their last result states to build the 24-hour summary.',
@@ -344,10 +344,10 @@ recipe_profiles = {
     'recipe-restore-readiness-check': {
         'requires': ['bakufu-restore', 'bakufu-restore-points', 'bakufu-mount-servers', 'bakufu-repositories'],
         'commands': [
-            'bakufu run RestorePoints GetAllRestorePoints --pretty',
-            'bakufu run MountServers GetAllMountServers --pretty',
-            'bakufu run Repositories GetAllRepositories --pretty',
-            'bakufu run Restore GetRestoreSummary --pretty',
+            'bakufu run RestorePoints GetAllRestorePoints',
+            'bakufu run MountServers GetAllMountServers',
+            'bakufu run Repositories GetAllRepositories',
+            'bakufu run Restore GetRestoreSummary',
         ],
         'instructions': [
             'Verify restore points exist for critical workloads and are within SLA age.',
@@ -364,8 +364,8 @@ recipe_profiles = {
         'requires': ['bakufu-repositories', 'bakufu-cloud-browser', 'bakufu-cloud-credentials-add', 'bakufu-object-storage-browse'],
         'commands': [
             'bakufu workflows createWasabiRepo --spec @repo.json',
-            'bakufu call /api/v1/cloudBrowser --method POST --json @browse.json --pretty',
-            'bakufu run Repositories GetAllRepositories --pretty',
+            'bakufu call /api/v1/cloudBrowser --method POST --body @browse.json',
+            'bakufu run Repositories GetAllRepositories',
         ],
         'instructions': [
             'Create or verify cloud credentials before repository creation.',
@@ -383,10 +383,10 @@ recipe_profiles = {
         'commands': [
             'bakufu workflows capacityReport',
             'bakufu workflows validateImmutability',
-            'bakufu run Security GetBestPracticesComplianceResult --pretty',
-            'bakufu run Security GetFourEyesAuthorizationEvents --pretty',
-            'bakufu run License GetLicense --pretty',
-            'bakufu run Sessions GetAllSessions --params \'{"limit": 500}\' --page-all --pretty',
+            'bakufu run Security GetBestPracticesComplianceResult',
+            'bakufu run Security GetFourEyesAuthorizationEvents',
+            'bakufu run License GetLicense',
+            'bakufu run Sessions GetAllSessions --params \'{"limit": 500}\' --page-all',
         ],
         'instructions': [
             'Collect evidence from capacity, immutability, security, and license domains.',
@@ -406,10 +406,10 @@ recipe_profiles = {
         'requires': ['bakufu-jobs', 'bakufu-repositories', 'bakufu-inventory-browser'],
         'commands': [
             'bakufu schema CreateJob',
-            'bakufu run InventoryBrowser GetVirtualInfrastructure --pretty',
-            'bakufu run Repositories GetAllRepositories --pretty',
-            'bakufu run Jobs CreateJob --json @job-spec.json --pretty',
-            'bakufu run Jobs GetJob --params \'{"id": "<job-id>"}\' --pretty',
+            'bakufu run InventoryBrowser GetVirtualInfrastructure',
+            'bakufu run Repositories GetAllRepositories',
+            'bakufu run Jobs CreateJob --body @job-spec.json',
+            'bakufu run Jobs GetJob --params \'{"id": "<job-id>"}\'',
         ],
         'instructions': [
             'Use `bakufu schema CreateJob` to discover required and optional fields before building the spec.',
@@ -427,9 +427,9 @@ recipe_profiles = {
     'recipe-modify-job-schedule': {
         'requires': ['bakufu-jobs', 'bakufu-job-by-name'],
         'commands': [
-            'bakufu jobs list --pretty',
-            'bakufu run Jobs GetJob --params \'{"id": "<job-id>"}\' --pretty',
-            'bakufu run Jobs UpdateJob --params \'{"id": "<job-id>"}\' --json @schedule-patch.json --pretty',
+            'bakufu jobs list',
+            'bakufu run Jobs GetJob --params \'{"id": "<job-id>"}\'',
+            'bakufu run Jobs UpdateJob --params \'{"id": "<job-id>"}\' --body @schedule-patch.json',
         ],
         'instructions': [
             'Resolve the job by name or ID first, then GET its current full configuration.',
@@ -447,9 +447,9 @@ recipe_profiles = {
         'requires': ['bakufu-repositories', 'bakufu-managed-servers', 'bakufu-credentials'],
         'commands': [
             'bakufu schema CreateRepository',
-            'bakufu run ManagedServers GetAllManagedServers --pretty',
-            'bakufu run Repositories CreateRepository --json @repo-spec.json --pretty',
-            'bakufu run Repositories GetAllRepositories --pretty',
+            'bakufu run ManagedServers GetAllManagedServers',
+            'bakufu run Repositories CreateRepository --body @repo-spec.json',
+            'bakufu run Repositories GetAllRepositories',
         ],
         'instructions': [
             'Ensure the target managed server is added and reachable before repository creation.',
@@ -466,9 +466,9 @@ recipe_profiles = {
         'requires': ['bakufu-proxies', 'bakufu-managed-servers', 'bakufu-credentials'],
         'commands': [
             'bakufu schema CreateProxy',
-            'bakufu run ManagedServers GetAllManagedServers --pretty',
-            'bakufu run Proxies CreateProxy --json @proxy-spec.json --pretty',
-            'bakufu run Proxies GetAllProxiesStates --pretty',
+            'bakufu run ManagedServers GetAllManagedServers',
+            'bakufu run Proxies CreateProxy --body @proxy-spec.json',
+            'bakufu run Proxies GetAllProxiesStates',
         ],
         'instructions': [
             'Verify the managed server is added and its components are up to date before proxy creation.',
@@ -485,9 +485,9 @@ recipe_profiles = {
         'requires': ['bakufu-managed-servers', 'bakufu-credentials', 'bakufu-connection'],
         'commands': [
             'bakufu schema CreateManagedServer',
-            'bakufu run Connection GetConnectionCertificate --params \'{"host": "<server>"}\' --pretty',
-            'bakufu run ManagedServers CreateManagedServer --json @server-spec.json --pretty',
-            'bakufu run ManagedServers GetAllManagedServers --pretty',
+            'bakufu run Connection GetConnectionCertificate --params \'{"host": "<server>"}\'',
+            'bakufu run ManagedServers CreateManagedServer --body @server-spec.json',
+            'bakufu run ManagedServers GetAllManagedServers',
         ],
         'instructions': [
             'Retrieve the TLS certificate or SSH fingerprint first and include it in the spec for trust.',
@@ -503,9 +503,9 @@ recipe_profiles = {
     'recipe-clone-job': {
         'requires': ['bakufu-jobs', 'bakufu-job-by-name'],
         'commands': [
-            'bakufu jobs list --pretty',
-            'bakufu run Jobs CloneJob --params \'{"id": "<job-id>"}\' --pretty',
-            'bakufu run Jobs GetJob --params \'{"id": "<cloned-job-id>"}\' --pretty',
+            'bakufu jobs list',
+            'bakufu run Jobs CloneJob --params \'{"id": "<job-id>"}\'',
+            'bakufu run Jobs GetJob --params \'{"id": "<cloned-job-id>"}\'',
         ],
         'instructions': [
             'Resolve the source job by name or ID before cloning.',
@@ -522,10 +522,10 @@ recipe_profiles = {
     'recipe-surebackup-verify': {
         'requires': ['bakufu-jobs', 'bakufu-sessions', 'bakufu-session-follow'],
         'commands': [
-            'bakufu jobs list --pretty',
-            'bakufu run Jobs StartJob --params \'{"id": "<surebackup-job-id>"}\' --pretty',
-            'bakufu sessions show <session-id> --pretty',
-            'bakufu sessions logs <session-id> --pretty',
+            'bakufu jobs list',
+            'bakufu run Jobs StartJob --params \'{"id": "<surebackup-job-id>"}\'',
+            'bakufu sessions show <session-id>',
+            'bakufu sessions logs <session-id>',
         ],
         'instructions': [
             'Identify existing SureBackupContentScan jobs or create one for the target backups.',
@@ -543,10 +543,10 @@ recipe_profiles = {
     'recipe-malware-scan-verify': {
         'requires': ['bakufu-malware-detection', 'bakufu-sessions', 'bakufu-session-follow'],
         'commands': [
-            'bakufu run MalwareDetection ScanBackup --json @scan-spec.json --pretty',
-            'bakufu run MalwareDetection GetAllMalwareEvents --pretty',
-            'bakufu run MalwareDetection GetYaraRules --pretty',
-            'bakufu sessions show <session-id> --pretty',
+            'bakufu run MalwareDetection ScanBackup --body @scan-spec.json',
+            'bakufu run MalwareDetection GetAllMalwareEvents',
+            'bakufu run MalwareDetection GetYaraRules',
+            'bakufu sessions show <session-id>',
         ],
         'instructions': [
             'Identify target backup objects and restore points before initiating the scan.',
@@ -565,9 +565,9 @@ recipe_profiles = {
     'recipe-sobr-tier-health': {
         'requires': ['bakufu-repositories', 'bakufu-repo-capacity', 'bakufu-sobr-list'],
         'commands': [
-            'bakufu run Repositories GetAllScaleOutRepositories --pretty',
+            'bakufu run Repositories GetAllScaleOutRepositories',
             'bakufu workflows capacityReport',
-            'bakufu run Repositories GetAllRepositoriesStates --pretty',
+            'bakufu run Repositories GetAllRepositoriesStates',
         ],
         'instructions': [
             'List all SOBRs and their extent configurations first.',
@@ -583,9 +583,9 @@ recipe_profiles = {
     'recipe-server-rescan': {
         'requires': ['bakufu-managed-servers', 'bakufu-sessions', 'bakufu-managed-server-rescan'],
         'commands': [
-            'bakufu run ManagedServers GetAllManagedServers --pretty',
-            'bakufu run ManagedServers RescanManagedServer --params \'{"id": "<server-id>"}\' --pretty',
-            'bakufu sessions show <session-id> --pretty',
+            'bakufu run ManagedServers GetAllManagedServers',
+            'bakufu run ManagedServers RescanManagedServer --params \'{"id": "<server-id>"}\'',
+            'bakufu sessions show <session-id>',
         ],
         'instructions': [
             'List managed servers and identify targets requiring rescan.',
@@ -601,7 +601,7 @@ recipe_profiles = {
     'recipe-wan-accelerator-review': {
         'requires': ['bakufu-wan-accelerators'],
         'commands': [
-            'bakufu run WANAccelerators GetAllWanAccelerators --pretty',
+            'bakufu run WANAccelerators GetAllWanAccelerators',
         ],
         'instructions': [
             'List all WAN accelerators and verify cache folder and size settings.',
@@ -617,9 +617,9 @@ recipe_profiles = {
     'recipe-platform-inventory-browse': {
         'requires': ['bakufu-inventory-browser', 'bakufu-managed-servers'],
         'commands': [
-            'bakufu run InventoryBrowser GetVirtualInfrastructure --pretty',
-            'bakufu run InventoryBrowser GetVmwareHosts --params \'{"hostId": "<host-id>"}\' --pretty',
-            'bakufu run ManagedServers GetAllManagedServers --pretty',
+            'bakufu run InventoryBrowser GetVirtualInfrastructure',
+            'bakufu run InventoryBrowser GetVmwareHosts --params \'{"hostId": "<host-id>"}\'',
+            'bakufu run ManagedServers GetAllManagedServers',
         ],
         'instructions': [
             'List all virtualization servers to identify vSphere, Hyper-V, and Cloud Director platforms.',
@@ -638,9 +638,9 @@ recipe_profiles = {
         'requires': ['bakufu-managed-servers', 'bakufu-inventory-browser', 'bakufu-managed-server-rescan'],
         'commands': [
             'bakufu schema CreateManagedServer',
-            'bakufu run ManagedServers CreateManagedServer --json @server-spec.json --pretty',
-            'bakufu run ManagedServers GetManagedServer --params \'{"id": "<server-id>"}\' --pretty',
-            'bakufu run InventoryBrowser GetVirtualInfrastructure --pretty',
+            'bakufu run ManagedServers CreateManagedServer --body @server-spec.json',
+            'bakufu run ManagedServers GetManagedServer --params \'{"id": "<server-id>"}\'',
+            'bakufu run InventoryBrowser GetVirtualInfrastructure',
         ],
         'instructions': [
             'Use `bakufu schema CreateManagedServer` to discover required fields (hostname, credentials, type).',
@@ -660,7 +660,7 @@ recipe_profiles = {
     'recipe-repository-health-review': {
         'requires': ['bakufu-repositories', 'bakufu-repo-capacity'],
         'commands': [
-            'bakufu run Repositories GetAllRepositories --pretty',
+            'bakufu run Repositories GetAllRepositories',
             'bakufu workflows capacityReport',
         ],
         'instructions': [
@@ -682,7 +682,7 @@ def _recipe_profile(name: str) -> dict:
     if name in recipe_profiles:
         return recipe_profiles[name]
     workflow = recipe_workflow_map.get(name)
-    commands = ['bakufu jobs list --pretty', 'bakufu sessions show <session-id> --pretty']
+    commands = ['bakufu jobs list', 'bakufu sessions show <session-id>']
     if workflow:
         commands.insert(0, f'bakufu workflows {workflow}')
     return {
@@ -1176,7 +1176,7 @@ PREREQUISITE: Load the following utility skills first: `bakufu-shared`
 
 - `bakufu services list`
 - `bakufu operations --tag "{humanize(name).replace('Bakufu ', '')}"`
-- `bakufu run <Tag> <OperationId> --params '{{}}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{{}}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

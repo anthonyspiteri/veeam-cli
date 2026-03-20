@@ -19,8 +19,8 @@ Update a job schedule and retention policy.
 
 ## Relevant Commands
 
-- `bakufu run Jobs GetJob --params '{"id": "<job-id>"}' --pretty`
-- `bakufu run Jobs UpdateJob --params '{"id": "<job-id>"}' --json @patch.json --pretty`
+- `bakufu run Jobs GetJob --params '{"id": "<job-id>"}'`
+- `bakufu run Jobs UpdateJob --params '{"id": "<job-id>"}' --body @patch.json`
 
 ## Instructions
 - GET the current job configuration first; modify only schedule and retention fields.

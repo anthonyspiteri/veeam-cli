@@ -22,10 +22,10 @@ Create a new backup job with VMs, repository, and schedule.
 ## Relevant Commands
 
 - `bakufu schema CreateJob`
-- `bakufu run InventoryBrowser GetVirtualInfrastructure --pretty`
-- `bakufu run Repositories GetAllRepositories --pretty`
-- `bakufu run Jobs CreateJob --json @job-spec.json --pretty`
-- `bakufu run Jobs GetJob --params '{"id": "<job-id>"}' --pretty`
+- `bakufu run InventoryBrowser GetVirtualInfrastructure`
+- `bakufu run Repositories GetAllRepositories`
+- `bakufu run Jobs CreateJob --body @job-spec.json`
+- `bakufu run Jobs GetJob --params '{"id": "<job-id>"}'`
 
 ## Instructions
 - Use `bakufu schema CreateJob` to discover required and optional fields before building the spec.

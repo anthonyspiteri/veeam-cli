@@ -21,7 +21,7 @@ The WAN Accelerators section defines paths and operations for managing WAN accel
 
 - `bakufu services list`
 - `bakufu operations --tag "Wan Accelerators"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

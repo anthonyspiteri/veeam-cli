@@ -21,7 +21,7 @@ The Credentials section defines paths and operations for managing credentials re
 
 - `bakufu services list`
 - `bakufu operations --tag "Credentials"`
-- `bakufu run <Tag> <OperationId> --params '{}' --pretty`
+- `bakufu run <Tag> <OperationId> --params '{}'`
 - `bakufu schema <OperationId>`
 
 ## Instructions

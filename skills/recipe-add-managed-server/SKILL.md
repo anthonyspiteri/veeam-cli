@@ -22,9 +22,9 @@ Add a vSphere, Hyper-V, Linux, or Windows server to managed infrastructure.
 ## Relevant Commands
 
 - `bakufu schema CreateManagedServer`
-- `bakufu run Connection GetConnectionCertificate --params '{"host": "<server>"}' --pretty`
-- `bakufu run ManagedServers CreateManagedServer --json @server-spec.json --pretty`
-- `bakufu run ManagedServers GetAllManagedServers --pretty`
+- `bakufu run Connection GetConnectionCertificate --params '{"host": "<server>"}'`
+- `bakufu run ManagedServers CreateManagedServer --body @server-spec.json`
+- `bakufu run ManagedServers GetAllManagedServers`
 
 ## Instructions
 - Retrieve the TLS certificate or SSH fingerprint first and include it in the spec for trust.
