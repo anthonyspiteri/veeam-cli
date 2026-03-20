@@ -17,8 +17,15 @@ from .mcp_server import serve
 from .mcp_helpers import run_workflow, WORKFLOWS
 from .auth_setup import setup as auth_setup
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DOCS_SKILLS_PATH = PROJECT_ROOT / "docs" / "skills.md"
+# When running as a PyInstaller frozen binary, bundled data files live under
+# sys._MEIPASS (the extraction dir).  In a normal source/venv install they
+# live two levels above this package file (the repo / installed root).
+if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    _DATA_ROOT = Path(sys._MEIPASS)
+else:
+    _DATA_ROOT = Path(__file__).resolve().parents[2]
+
+DOCS_SKILLS_PATH = _DATA_ROOT / "docs" / "skills.md"
 
 
 class CliError(Exception):

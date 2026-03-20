@@ -5,9 +5,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional, List, Dict
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-LEGACY_SWAGGER_PATH = PROJECT_ROOT / "swagger_v1.3.json"
-SCHEMAS_DIR = PROJECT_ROOT / "schemas"
+if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    _DATA_ROOT = Path(sys._MEIPASS)
+else:
+    _DATA_ROOT = Path(__file__).resolve().parents[2]
+
+PROJECT_ROOT = _DATA_ROOT  # kept for any external references
+LEGACY_SWAGGER_PATH = _DATA_ROOT / "swagger_v1.3.json"
+SCHEMAS_DIR = _DATA_ROOT / "schemas"
 
 
 def _resolve_swagger_path() -> Path:

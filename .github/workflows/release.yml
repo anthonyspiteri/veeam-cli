@@ -46,19 +46,22 @@ jobs:
           - os: ubuntu-latest
             artifact_name: bakufu-linux-x86_64
             asset_name: bakufu-linux-x86_64
-            add_data: schemas:schemas
+            add_data_schemas: schemas:schemas
+            add_data_docs: docs:docs
             binary_path: dist/bakufu
             runtime_tmpdir: /tmp/bakufu-runtime
           - os: macos-latest
             artifact_name: bakufu-macos-arm64
             asset_name: bakufu-macos-arm64
-            add_data: schemas:schemas
+            add_data_schemas: schemas:schemas
+            add_data_docs: docs:docs
             binary_path: dist/bakufu
             runtime_tmpdir: /tmp/bakufu-runtime
           - os: windows-latest
             artifact_name: bakufu-windows-x86_64
             asset_name: bakufu-windows-x86_64.exe
-            add_data: schemas;schemas
+            add_data_schemas: schemas;schemas
+            add_data_docs: docs;docs
             binary_path: dist/bakufu.exe
             runtime_tmpdir: C:\bakufu-runtime
     runs-on: ${{ matrix.os }}
@@ -86,7 +89,8 @@ jobs:
             --onefile \
             --runtime-tmpdir "${{ matrix.runtime_tmpdir }}" \
             --paths src \
-            --add-data "${{ matrix.add_data }}" \
+            --add-data "${{ matrix.add_data_schemas }}" \
+            --add-data "${{ matrix.add_data_docs }}" \
             src/bakufu_cli/__main__.py
           mkdir -p release
           cp "${{ matrix.binary_path }}" "release/${{ matrix.asset_name }}"
