@@ -122,8 +122,8 @@ bakufu is built in four composable layers:
 | Layer | Count | Description |
 |---|---|---|
 | Services | 67 | Direct Swagger-driven API operations — every VBR domain exposed as commands |
-| Helpers | 18 | Multi-call operations with safety patterns (name resolution, atomic updates, aggregations) |
-| Recipes | 42 | Sequenced runbooks with prerequisites, ordered steps, and domain notes |
+| Helpers | 18 | Focused on a single resource or concept — may chain multiple API calls but scoped to answering "what is the state of X?" with safe write patterns and aggregations |
+| Recipes | 42 | Cross-resource operational workflows — orchestrate multiple helpers and services to answer an operational question, with prerequisites, ordered steps, and domain notes |
 | Personas | 7 | Role-based skill bundles — backup-admin, storage-admin, infrastructure-engineer, and more |
 
 **Total: 109 skills**
@@ -343,8 +343,8 @@ Credential resolution precedence:
 Four-layer command model:
 
 1. **Services** — Swagger-driven, auto-generated from API tags. Every VBR REST domain is a service.
-2. **Helpers** — Python-implemented multi-call tools with safe write patterns and aggregations.
-3. **Recipes** — Sequenced runbooks: what to run, in what order, what to look for.
+2. **Helpers** — Multi-call tools scoped to a single resource or concept. May chain several API calls but return data about one thing (jobs, repositories, sessions). They fetch and present; they don't interpret.
+3. **Recipes** — Cross-resource operational workflows. Orchestrate multiple helpers and services, apply decision logic, and produce an answer or recommendation — not just raw data.
 4. **Personas** — Role bundles that load the right recipes and helpers for a given operator.
 
 Execution path:
