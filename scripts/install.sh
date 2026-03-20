@@ -113,10 +113,10 @@ if [[ "${CHECK_ONLY}" == "true" ]]; then
   fi
   if [[ -n "${LATEST_TAG}" ]]; then
     echo "Latest release: ${LATEST_TAG}"
-    if [[ -n "${EXISTING_VERSION}" && "${EXISTING_VERSION}" == *"${LATEST_TAG#v}"* ]]; then
+    if [[ -n "${EXISTING_VERSION}" && "${EXISTING_VERSION}" == "${LATEST_TAG#v}" ]]; then
       echo "Already up to date."
     else
-      echo "Run install.sh to upgrade."
+      echo "Update available: run install.sh to upgrade."
     fi
   else
     echo "Could not determine latest release (gh CLI may not be authenticated)."
