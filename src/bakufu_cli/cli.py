@@ -1401,14 +1401,35 @@ def build_parser():
     subparsers = parser.add_subparsers(dest="command")
     _add_auth_parser(subparsers)
 
-    call = subparsers.add_parser("call", help="Call an API path directly")
-    call.add_argument("path")
-    call.add_argument("--method", default="GET")
-    call.add_argument("--params")
-    call.add_argument("--body", help="Request body as JSON string or @file path")
+    call = subparsers.add_parser(
+        "call",
+        help="Raw API call to any VBR REST endpoint",
+        description=(
+            "Make a raw HTTP call to any Veeam Backup & Replication REST API path.\n\n"
+            "Use this as an escape hatch when a specific endpoint is not yet covered\n"
+            "by a named command. Authentication and base URL are handled automatically.\n\n"
+            "Examples:\n"
+            "  bakufu call /api/v1/jobs\n"
+            "  bakufu call /api/v1/jobs --json\n"
+            "  bakufu call /api/v1/jobs/<id> --method DELETE\n"
+            "  bakufu call /api/v1/jobs --method POST --body '{\"name\": \"MyJob\"}'\n"
+            "  bakufu call /api/v1/jobs --method POST --body @job.json\n"
+            "  bakufu call /api/v1/jobs --params 'limit=100&skip=0'\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    call.add_argument("path", help="API path, e.g. /api/v1/jobs or /api/v1/jobs/<id>")
+    call.add_argument("--method", default="GET",
+                      help="HTTP method: GET, POST, PUT, PATCH, DELETE (default: GET)")
+    call.add_argument("--params",
+                      help="Query string parameters, e.g. 'limit=100&skip=0'")
+    call.add_argument("--body",
+                      help="Request body as a JSON string or @file path (e.g. @payload.json)")
     _add_output_flags(call)
-    call.add_argument("--refresh", action="store_true")
-    call.add_argument("--dry-run", action="store_true")
+    call.add_argument("--refresh", action="store_true",
+                      help="Force a token refresh before the call")
+    call.add_argument("--dry-run", action="store_true",
+                      help="Print the curl command that would be executed without running it")
     call.set_defaults(func=cmd_call)
 
     services = subparsers.add_parser("services", help="Swagger services (tags)")
@@ -1567,7 +1588,7 @@ def _rewrite_shorthand(argv):
         return argv
     known = {
         "auth", "auth-setup", "auth-login", "call", "services", "operations",
-        "run", "schema", "jobs", "sessions", "workflows", "skills", "mcp",
+        "run", "schema", "jobs", "sessions", "workflows", "helpers", "skills", "mcp",
         "license", "completion", "getting-started", "version", "-h", "--help",
     }
     first = argv[0]
