@@ -414,6 +414,9 @@ def cmd_schema(args):
 
 def cmd_jobs_list(args):
     response = call_api("/api/v1/jobs", pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    if getattr(args, "filter", None):
+        body = json.loads(response.get("body") or "{}")
+        response = dict(response, body=json.dumps(_apply_filter(body, args.filter)))
     _print_response(response, args)
 
 
@@ -465,6 +468,475 @@ def cmd_license_install_file(args):
         account=args.account,
     )
     _print_response(response, args)
+
+
+def _apply_filter(data: Any, filter_expr: Optional[str]) -> Any:
+    """Apply a simple key=value or key~=substring filter to a list of dicts."""
+    if not filter_expr:
+        return data
+    rows = None
+    if isinstance(data, dict):
+        for field in ("data", "items", "records"):
+            if isinstance(data.get(field), list):
+                rows = data[field]
+                wrapper_key = field
+                break
+    elif isinstance(data, list):
+        rows = data
+        wrapper_key = None
+    if rows is None:
+        return data
+    filtered = []
+    for expr in filter_expr.split(","):
+        expr = expr.strip()
+        if "~=" in expr:
+            key, val = expr.split("~=", 1)
+            filtered = [r for r in rows if val.lower() in str(r.get(key.strip(), "")).lower()]
+        elif "=" in expr:
+            key, val = expr.split("=", 1)
+            filtered = [r for r in rows if str(r.get(key.strip(), "")).lower() == val.lower()]
+        else:
+            filtered = rows
+        rows = filtered
+    if isinstance(data, dict) and wrapper_key:
+        result = dict(data)
+        result[wrapper_key] = filtered
+        return result
+    return filtered
+
+
+def cmd_repos_list(args):
+    response = call_api("/api/v1/backupInfrastructure/repositories",
+                        pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    if args.filter:
+        body = json.loads(response.get("body") or "{}")
+        response = dict(response, body=json.dumps(_apply_filter(body, args.filter)))
+    _print_response(response, args)
+
+
+def cmd_repos_show(args):
+    path = f"/api/v1/backupInfrastructure/repositories/{args.repo_id}"
+    response = call_api(path, pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_repos_states(args):
+    response = call_api("/api/v1/backupInfrastructure/repositories/states",
+                        pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    if args.filter:
+        body = json.loads(response.get("body") or "{}")
+        response = dict(response, body=json.dumps(_apply_filter(body, args.filter)))
+    _print_response(response, args)
+
+
+def cmd_jobs_show(args):
+    path = f"/api/v1/jobs/{args.job_id}"
+    response = call_api(path, pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_jobs_stop(args):
+    path = f"/api/v1/jobs/{args.job_id}/stop"
+    response = call_api(path, method="POST", data={}, pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_jobs_enable(args):
+    path = f"/api/v1/jobs/{args.job_id}/enable"
+    response = call_api(path, method="POST", data={}, pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_jobs_disable(args):
+    path = f"/api/v1/jobs/{args.job_id}/disable"
+    response = call_api(path, method="POST", data={}, pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_jobs_retry(args):
+    path = f"/api/v1/jobs/{args.job_id}/retry"
+    response = call_api(path, method="POST", data={}, pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_jobs_delete(args):
+    if not args.force:
+        confirm = input(f"Delete job {args.job_id}? This cannot be undone. Type 'yes' to confirm: ").strip()
+        if confirm.lower() != "yes":
+            print("Aborted.")
+            return
+    path = f"/api/v1/jobs/{args.job_id}"
+    response = call_api(path, method="DELETE", pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_jobs_clone(args):
+    path = f"/api/v1/jobs/{args.job_id}/clone"
+    body: Dict[str, Any] = {}
+    if args.name:
+        body["name"] = args.name
+    response = call_api(path, method="POST", data=body, pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_jobs_update(args):
+    spec = _parse_json_arg(args.spec)
+    if not spec:
+        raise CliError("JOBS_UPDATE_SPEC_REQUIRED", "A --spec JSON body or @file is required for update.")
+    path = f"/api/v1/jobs/{args.job_id}"
+    response = call_api(path, method="PUT", data=spec, pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_jobs_states(args):
+    params: Dict[str, Any] = {}
+    if args.limit:
+        params["limit"] = args.limit
+    if args.name_filter:
+        params["nameFilter"] = args.name_filter
+    if args.type_filter:
+        params["typeFilter"] = args.type_filter
+    if args.last_result_filter:
+        params["lastResultFilter"] = args.last_result_filter
+    if args.status_filter:
+        params["statusFilter"] = args.status_filter
+    if args.repo_id:
+        params["repositoryIdFilter"] = args.repo_id
+    if args.last_run_after:
+        params["lastRunAfterFilter"] = args.last_run_after
+    if args.high_priority:
+        params["isHighPriorityJobFilter"] = "true"
+    response = call_api("/api/v1/jobs/states", params=params, pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    if args.filter:
+        body = json.loads(response.get("body") or "{}")
+        response = dict(response, body=json.dumps(_apply_filter(body, args.filter)))
+    _print_response(response, args)
+
+
+def cmd_jobs_quick_backup(args):
+    spec = _parse_json_arg(args.spec) if args.spec else {}
+    response = call_api("/api/v1/jobs/quickBackup/vSphere", method="POST", data=spec, pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_jobs_export(args):
+    body: Dict[str, Any] = {}
+    if args.job_ids:
+        body["jobIds"] = [j.strip() for j in args.job_ids.split(",")]
+    if args.spec:
+        body = _parse_json_arg(args.spec) or body
+    response = call_api("/api/v1/automation/jobs/export", method="POST", data=body, pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    if args.output_file:
+        raw = response.get("body") or ""
+        Path(args.output_file).write_text(raw)
+        print(f"Exported to {args.output_file}")
+    else:
+        _print_response(response, args)
+
+
+def cmd_jobs_import(args):
+    import_path = Path(args.import_file).expanduser()
+    if not import_path.exists():
+        raise CliError("JOBS_IMPORT_FILE_NOT_FOUND", f"File not found: {import_path}")
+    body = json.loads(import_path.read_text())
+    response = call_api("/api/v1/automation/jobs/import", method="POST", data=body, pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_jobs_apply_policy(args):
+    path = f"/api/v1/jobs/{args.job_id}/applyConfiguration"
+    response = call_api(path, method="POST", data={}, pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_jobs_clear_cache(args):
+    path = f"/api/v1/jobs/{args.job_id}/clearCache"
+    response = call_api(path, method="POST", data={}, pretty=False,
+                        refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_sessions_list(args):
+    params: Dict[str, Any] = {}
+    if args.limit:
+        params["limit"] = args.limit
+    if args.job_id:
+        params["jobIdFilter"] = args.job_id
+    if args.state:
+        params["stateFilter"] = args.state
+    if args.result:
+        params["resultFilter"] = args.result
+    response = call_api("/api/v1/sessions", params=params,
+                        pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    if args.filter:
+        body = json.loads(response.get("body") or "{}")
+        response = dict(response, body=json.dumps(_apply_filter(body, args.filter)))
+    _print_response(response, args)
+
+
+def cmd_proxies_list(args):
+    response = call_api("/api/v1/backupInfrastructure/proxies",
+                        pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    if args.filter:
+        body = json.loads(response.get("body") or "{}")
+        response = dict(response, body=json.dumps(_apply_filter(body, args.filter)))
+    _print_response(response, args)
+
+
+def cmd_proxies_states(args):
+    response = call_api("/api/v1/backupInfrastructure/proxies/states",
+                        pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    _print_response(response, args)
+
+
+def cmd_sobr_list(args):
+    response = call_api("/api/v1/backupInfrastructure/scaleOutRepositories",
+                        pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    if args.filter:
+        body = json.loads(response.get("body") or "{}")
+        response = dict(response, body=json.dumps(_apply_filter(body, args.filter)))
+    _print_response(response, args)
+
+
+def cmd_auth_test(args):
+    import time
+    account = args.account
+    # Step 1: config
+    from .accounts import list_accounts, get_account_credentials, resolve_account
+    resolved = resolve_account(account)
+    if not resolved:
+        raise CliError("AUTH_TEST_NO_ACCOUNT",
+                       "No account configured.",
+                       hint="Run `bakufu auth setup <name>` first.")
+    creds = get_account_credentials(resolved)
+    server = creds.get("server", "") if creds else ""
+    insecure = creds.get("insecure", False) if creds else False
+    print(f"Account   : {resolved}")
+    print(f"Server    : {server}")
+    print(f"Insecure  : {'yes' if insecure else 'no'}")
+
+    # Step 2: token
+    print("Token     : ", end="", flush=True)
+    t0 = time.time()
+    try:
+        ensure_token(force_refresh=True, account=account)
+        print(f"OK ({int((time.time()-t0)*1000)}ms)")
+    except Exception as exc:
+        print(f"FAIL — {exc}")
+        raise CliError("AUTH_TEST_TOKEN_FAILED", str(exc),
+                       hint="Check credentials with `bakufu auth setup`.")
+
+    # Step 3: API reachability
+    print("API       : ", end="", flush=True)
+    t0 = time.time()
+    try:
+        resp = call_api("/api/v1/serverInfo", pretty=False, account=account)
+        body = json.loads(resp.get("body") or "{}")
+        ver = body.get("buildVersion") or body.get("serverVersion") or "unknown"
+        print(f"OK ({int((time.time()-t0)*1000)}ms) — VBR {ver}")
+    except Exception as exc:
+        print(f"FAIL — {exc}")
+        raise CliError("AUTH_TEST_API_FAILED", str(exc))
+
+    print("Result    : PASS")
+
+
+def cmd_mcp_config(args):
+    import shutil
+    binary = shutil.which("bakufu") or sys.executable
+    # If running in a venv, prefer the venv binary
+    if getattr(sys, "frozen", False):
+        binary = sys.executable
+
+    config = {
+        "mcpServers": {
+            "bakufu": {
+                "command": binary,
+                "args": ["mcp"],
+                "env": {}
+            }
+        }
+    }
+
+    account = args.account
+    if account:
+        config["mcpServers"]["bakufu"]["args"].extend(["--account", account])
+
+    if args.services and args.services != "all":
+        config["mcpServers"]["bakufu"]["args"].extend(["--services", args.services])
+
+    print("# Paste into your MCP client config (e.g. claude_desktop_config.json)")
+    print(json.dumps(config, indent=2))
+    print()
+    print("# Claude Desktop config path:")
+    print("#   macOS  : ~/Library/Application Support/Claude/claude_desktop_config.json")
+    print("#   Windows: %APPDATA%\\Claude\\claude_desktop_config.json")
+    print("#   Linux  : ~/.config/Claude/claude_desktop_config.json")
+    print()
+    print(f"# Binary detected at: {binary}")
+
+
+def cmd_update(args):
+    import urllib.request
+    import platform
+
+    print("Checking for updates...")
+    try:
+        url = "https://api.github.com/repos/anthonyspiteri/veeam-cli/releases/latest"
+        req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
+                                                    "User-Agent": "bakufu-cli"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            release = json.loads(resp.read())
+    except Exception as exc:
+        raise CliError("UPDATE_CHECK_FAILED", f"Could not reach GitHub: {exc}")
+
+    latest_tag = release.get("tag_name", "").lstrip("v")
+    try:
+        current = importlib.metadata.version("bakufu-cli")
+    except importlib.metadata.PackageNotFoundError:
+        current = "unknown"
+
+    print(f"Current   : {current}")
+    print(f"Latest    : {latest_tag}")
+
+    if current == latest_tag:
+        print("Already up to date.")
+        return
+
+    if args.check:
+        print(f"Update available: {current} -> {latest_tag}")
+        print("Run `bakufu update` without --check to install.")
+        return
+
+    # Detect platform and pick asset
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+    if system == "darwin":
+        asset_name = "bakufu-macos-arm64"
+    elif system == "linux":
+        asset_name = "bakufu-linux-x86_64"
+    elif system == "windows":
+        asset_name = "bakufu-windows-x86_64.exe"
+    else:
+        raise CliError("UPDATE_PLATFORM_UNSUPPORTED", f"Unsupported platform: {system}")
+
+    assets = release.get("assets", [])
+    asset = next((a for a in assets if a.get("name") == asset_name), None)
+    if not asset:
+        raise CliError("UPDATE_ASSET_NOT_FOUND",
+                       f"Binary '{asset_name}' not found in release {latest_tag}.",
+                       hint="Try installing manually via the install script.")
+
+    print(f"Downloading {asset_name}...")
+    import shutil
+    import stat
+    import tempfile
+
+    download_url = asset["browser_download_url"]
+    with tempfile.NamedTemporaryFile(delete=False, suffix="-bakufu-new") as tmp:
+        tmp_path = tmp.name
+        req2 = urllib.request.Request(download_url, headers={"User-Agent": "bakufu-cli"})
+        with urllib.request.urlopen(req2, timeout=60) as r:
+            shutil.copyfileobj(r, tmp)
+
+    # Find current install path
+    install_path = shutil.which("bakufu")
+    if not install_path:
+        install_path = "/usr/local/bin/bakufu"
+
+    os.chmod(tmp_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+    try:
+        shutil.move(tmp_path, install_path)
+    except PermissionError:
+        import subprocess
+        subprocess.run(["sudo", "mv", tmp_path, install_path], check=True)
+
+    print(f"Updated to {latest_tag} at {install_path}")
+
+
+def cmd_doctor(args):
+    import time
+    import shutil
+    import platform
+
+    ok = True
+
+    def check(label: str, fn):
+        nonlocal ok
+        print(f"  {label:<30}", end="", flush=True)
+        try:
+            result = fn()
+            print(f"OK  {result or ''}")
+        except Exception as exc:
+            print(f"FAIL  {exc}")
+            ok = False
+
+    print(f"\nbakufu doctor\n{'='*50}")
+    print(f"\nSystem")
+
+    try:
+        ver = importlib.metadata.version("bakufu-cli")
+    except importlib.metadata.PackageNotFoundError:
+        ver = "unknown"
+
+    check("bakufu version", lambda: ver)
+    check("python version", lambda: platform.python_version())
+    check("platform", lambda: f"{platform.system()} {platform.machine()}")
+    check("curl available", lambda: shutil.which("curl") or (_ for _ in ()).throw(Exception("not found")))
+
+    print(f"\nAuth config")
+    from .accounts import list_accounts, resolve_account, get_account_credentials
+    data = list_accounts()
+    accounts = data.get("accounts", {})
+    if not accounts:
+        print("  No accounts configured — run `bakufu auth setup <name>`")
+        ok = False
+    else:
+        default = data.get("default")
+        for name, info in accounts.items():
+            marker = " (default)" if name == default else ""
+            check(f"account '{name}'{marker}", lambda n=name, i=info: i.get("server", "?"))
+
+    print(f"\nConnectivity")
+    resolved = resolve_account(args.account)
+    if resolved:
+        check("token refresh", lambda: ensure_token(force_refresh=True, account=resolved) and "valid")
+
+        def _api_check():
+            t0 = time.time()
+            resp = call_api("/api/v1/serverInfo", pretty=False, account=resolved)
+            body = json.loads(resp.get("body") or "{}")
+            ms = int((time.time() - t0) * 1000)
+            ver = body.get("buildVersion") or body.get("serverVersion") or "?"
+            return f"VBR {ver} ({ms}ms)"
+        check("API reachable", _api_check)
+    else:
+        print("  Skipped — no account configured")
+
+    print(f"\nData files")
+    check("skills.md", lambda: str(DOCS_SKILLS_PATH) if DOCS_SKILLS_PATH.exists() else (_ for _ in ()).throw(Exception("missing")))
+
+    def _swagger_check():
+        spec = SwaggerSpec.load()
+        ops = list(spec.iter_operations())
+        return f"{len(ops)} operations"
+    check("swagger spec", _swagger_check)
+
+    print(f"\n{'='*50}")
+    print("Result: PASS" if ok else "Result: FAIL — see errors above")
+    print()
 
 
 def cmd_skills_list(_args):
@@ -654,7 +1126,7 @@ def _completion_script_bash() -> str:
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   cmd="${COMP_WORDS[1]}"
   subcmd="${COMP_WORDS[2]}"
-  local top="auth auth-setup auth-login call services operations run schema jobs sessions workflows helpers skills mcp license completion getting-started version"
+  local top="auth auth-setup auth-login call services operations run schema jobs sessions repos proxies sobr workflows helpers skills mcp mcp-config license completion getting-started update doctor version"
 
   if [[ $COMP_CWORD -eq 1 ]]; then
     COMPREPLY=( $(compgen -W "$top --account --insecure -h --help" -- "$cur") )
@@ -664,30 +1136,51 @@ def _completion_script_bash() -> str:
   case "$cmd" in
     auth)
       if [[ $COMP_CWORD -eq 2 ]]; then
-        COMPREPLY=( $(compgen -W "setup login list default token" -- "$cur") )
+        COMPREPLY=( $(compgen -W "setup login list default token test" -- "$cur") )
       else
         COMPREPLY=( $(compgen -W "--server --username --password --default --refresh --account --insecure -h --help" -- "$cur") )
       fi
       ;;
     jobs)
       if [[ $COMP_CWORD -eq 2 ]]; then
-        COMPREPLY=( $(compgen -W "list start" -- "$cur") )
+        COMPREPLY=( $(compgen -W "list states show start stop retry enable disable delete clone update quick-backup export import apply-policy clear-cache" -- "$cur") )
       else
-        COMPREPLY=( $(compgen -W "--json --raw --refresh --dry-run -h --help" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--filter --name-filter --type-filter --last-result-filter --status-filter --repo-id --last-run-after --high-priority --limit --name --spec --job-ids --output-file --force --json --raw --refresh --dry-run -h --help" -- "$cur") )
       fi
       ;;
     sessions)
       if [[ $COMP_CWORD -eq 2 ]]; then
-        COMPREPLY=( $(compgen -W "show logs" -- "$cur") )
+        COMPREPLY=( $(compgen -W "list show logs" -- "$cur") )
       else
-        COMPREPLY=( $(compgen -W "--json --raw --refresh --dry-run -h --help" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--filter --limit --job-id --state --result --json --raw --refresh --dry-run -h --help" -- "$cur") )
       fi
       ;;
     services) COMPREPLY=( $(compgen -W "list -h --help" -- "$cur") ) ;;
     skills) COMPREPLY=( $(compgen -W "list -h --help" -- "$cur") ) ;;
+    repos)
+      if [[ $COMP_CWORD -eq 2 ]]; then
+        COMPREPLY=( $(compgen -W "list show states" -- "$cur") )
+      else
+        COMPREPLY=( $(compgen -W "--filter --json --raw --refresh --dry-run -h --help" -- "$cur") )
+      fi
+      ;;
+    proxies)
+      if [[ $COMP_CWORD -eq 2 ]]; then
+        COMPREPLY=( $(compgen -W "list states" -- "$cur") )
+      else
+        COMPREPLY=( $(compgen -W "--filter --json --raw --refresh --dry-run -h --help" -- "$cur") )
+      fi
+      ;;
+    sobr)
+      if [[ $COMP_CWORD -eq 2 ]]; then
+        COMPREPLY=( $(compgen -W "list" -- "$cur") )
+      else
+        COMPREPLY=( $(compgen -W "--filter --json --raw --refresh --dry-run -h --help" -- "$cur") )
+      fi
+      ;;
     workflows)
       if [[ $COMP_CWORD -eq 2 ]]; then
-        COMPREPLY=( $(compgen -W "investigateFailedJob createWasabiRepo capacityReport runSecurityAnalyzer validateImmutability" -- "$cur") )
+        COMPREPLY=( $(compgen -W "investigateFailedJob createWasabiRepo capacityReport runSecurityAnalyzer validateImmutability dailyJobHealth weeklyJobHealth rerunFailedJob repositoryHealthReview emergencyStopJob" -- "$cur") )
       else
         COMPREPLY=( $(compgen -W "--job-id --job-name --spec --wait --interval-ms --timeout-ms --describe --json --raw -h --help" -- "$cur") )
       fi
@@ -715,6 +1208,9 @@ def _completion_script_bash() -> str:
     call) COMPREPLY=( $(compgen -W "--method --params --body --json --raw --refresh --dry-run --insecure -h --help" -- "$cur") ) ;;
     operations) COMPREPLY=( $(compgen -W "--tag -h --help" -- "$cur") ) ;;
     mcp) COMPREPLY=( $(compgen -W "-s --services -e --helpers --no-helpers -w --workflows --no-workflows --insecure -h --help" -- "$cur") ) ;;
+    mcp-config) COMPREPLY=( $(compgen -W "--account --services -h --help" -- "$cur") ) ;;
+    update) COMPREPLY=( $(compgen -W "--check -h --help" -- "$cur") ) ;;
+    doctor) COMPREPLY=( $(compgen -W "--account -h --help" -- "$cur") ) ;;
     license)
       if [[ $COMP_CWORD -eq 2 ]]; then
         COMPREPLY=( $(compgen -W "show install-file" -- "$cur") )
@@ -745,18 +1241,26 @@ _bakufu() {
     cmds)
       _values 'command' \
         auth auth-setup auth-login call services operations run schema \
-        jobs sessions workflows helpers skills mcp license completion getting-started version
+        jobs sessions repos proxies sobr workflows helpers skills \
+        mcp mcp-config license completion getting-started update doctor version
       ;;
     args)
       case $words[2] in
-        auth) _values 'auth command' setup login list default token ;;
-        jobs) _values 'jobs command' list start ;;
-        sessions) _values 'sessions command' show logs ;;
+        auth) _values 'auth command' setup login list default token test ;;
+        jobs) _values 'jobs command' list states show start stop retry enable disable delete clone update quick-backup export import apply-policy clear-cache ;;
+        sessions) _values 'sessions command' list show logs ;;
         services) _values 'services command' list ;;
         skills) _values 'skills command' list ;;
-        workflows) _values 'workflow' investigateFailedJob createWasabiRepo capacityReport runSecurityAnalyzer validateImmutability ;;
+        repos) _values 'repos command' list show states ;;
+        proxies) _values 'proxies command' list states ;;
+        sobr) _values 'sobr command' list ;;
+        workflows) _values 'workflow' investigateFailedJob createWasabiRepo capacityReport runSecurityAnalyzer validateImmutability dailyJobHealth weeklyJobHealth rerunFailedJob repositoryHealthReview emergencyStopJob ;;
         helpers) _values 'helper' jobs_startByName jobs_lastResult jobs_create jobs_updateSchedule sessions_follow sessions_logs repos_capacity repos_addWasabi cloudCredentials_add objectStorage_browse proxies_states sobr_list managedServers_rescan malwareDetection_scan ;;
         mcp) _values 'options' -s --services -e --helpers --no-helpers -w --workflows --no-workflows --insecure ;;
+        mcp-config) _values 'options' --account --services ;;
+        update) _values 'options' --check ;;
+        doctor) _values 'options' --account ;;
+        license) _values 'license command' show install-file ;;
         run)
           if (( CURRENT == 3 )); then
             local -a _tags
@@ -1373,6 +1877,21 @@ def _add_auth_parser(subparsers):
     auth_token.add_argument("--account", help="Use a named account")
     auth_token.set_defaults(func=cmd_auth_token)
 
+    auth_test_cmd = auth_sub.add_parser(
+        "test",
+        help="Test connectivity: token refresh, API reachability, and server version",
+        description=(
+            "Verify the full authentication and connectivity chain for an account.\n\n"
+            "Checks: account config present, token refresh succeeds, API endpoint\n"
+            "reachable and returns a valid server version.\n\n"
+            "Examples:\n"
+            "  bakufu auth test\n"
+            "  bakufu auth test --account lab\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    auth_test_cmd.set_defaults(func=cmd_auth_test)
+
     # Backward-compatible aliases (pre gws-style command layout)
     auth_setup_legacy = subparsers.add_parser("auth-setup", help="Legacy alias for `auth setup`")
     auth_setup_legacy.add_argument("account_name")
@@ -1432,64 +1951,333 @@ def build_parser():
                       help="Print the curl command that would be executed without running it")
     call.set_defaults(func=cmd_call)
 
-    services = subparsers.add_parser("services", help="Swagger services (tags)")
+    services = subparsers.add_parser(
+        "services",
+        help="List available API service groups (swagger tags)",
+        description=(
+            "List the top-level service groups exposed by the VBR REST API.\n\n"
+            "Each service group (tag) maps to a domain such as Jobs, Repositories,\n"
+            "Sessions, Proxies, etc. Use these names with `bakufu operations` and\n"
+            "`bakufu run` to discover and call individual operations.\n\n"
+            "Examples:\n"
+            "  bakufu services list\n"
+            "  bakufu operations --tag Jobs\n"
+            "  bakufu run Jobs GetAllJobs\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     services.set_defaults(func=lambda _args: services.print_help())
     services_sub = services.add_subparsers(dest="services_cmd")
-    services_list = services_sub.add_parser("list", help="List services")
+    services_list = services_sub.add_parser("list", help="List all service groups")
     services_list.set_defaults(func=cmd_services_list)
 
-    ops = subparsers.add_parser("operations", help="Swagger operations")
-    ops.add_argument("--tag", help="Filter by tag")
+    ops = subparsers.add_parser(
+        "operations",
+        help="List API operations, optionally filtered by service group",
+        description=(
+            "List all available VBR REST API operations from the swagger spec.\n\n"
+            "Use --tag to filter to a specific service group. The operation IDs\n"
+            "shown here are the values used with `bakufu run` and `bakufu schema`.\n\n"
+            "Examples:\n"
+            "  bakufu operations\n"
+            "  bakufu operations --tag Jobs\n"
+            "  bakufu operations --tag Repositories\n"
+            "  bakufu run Jobs GetAllJobs\n"
+            "  bakufu schema GetAllJobs\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    ops.add_argument("--tag", help="Filter operations by service group (tag), e.g. Jobs, Repositories")
     ops.set_defaults(func=cmd_operations_list)
 
-    run = subparsers.add_parser("run", help="Run a Swagger operation by tag and id")
-    run.add_argument("tag")
-    run.add_argument("operation_id")
-    run.add_argument("--params")
+    run = subparsers.add_parser(
+        "run",
+        help="Run a VBR API operation by service group and operation ID",
+        description=(
+            "Execute any VBR REST API operation by its tag and operationId.\n\n"
+            "Use `bakufu services list` to find tags and `bakufu operations --tag <tag>`\n"
+            "to find operation IDs. Shorthand is also supported: bakufu <Tag> <OperationId>.\n\n"
+            "Examples:\n"
+            "  bakufu run Jobs GetAllJobs\n"
+            "  bakufu run Jobs GetAllJobs --json\n"
+            "  bakufu run Jobs StartJob --params 'jobId=<uuid>'\n"
+            "  bakufu run Repositories GetRepository --params 'id=<uuid>'\n"
+            "  bakufu run Jobs CreateJob --body @job.json\n"
+            "  bakufu run Jobs GetAllJobs --page-all\n"
+            "  bakufu Jobs GetAllJobs                   # shorthand\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    run.add_argument("tag", help="Service group (tag), e.g. Jobs, Repositories, Sessions")
+    run.add_argument("operation_id", help="Operation ID from `bakufu operations --tag <tag>`")
+    run.add_argument("--params", help="Query string parameters, e.g. 'limit=100&skip=0'")
     run.add_argument("--body", help="Request body as JSON string or @file path")
     _add_output_flags(run)
-    run.add_argument("--refresh", action="store_true")
-    run.add_argument("--dry-run", action="store_true")
-    run.add_argument("--page-all", action="store_true")
-    run.add_argument("--page-limit", type=int, default=200)
-    run.add_argument("--page-max", type=int, default=10)
-    run.add_argument("--page-delay", type=int, default=100)
+    run.add_argument("--refresh", action="store_true", help="Force token refresh before the call")
+    run.add_argument("--dry-run", action="store_true",
+                     help="Print the curl command without executing it")
+    run.add_argument("--page-all", action="store_true",
+                     help="Auto-paginate and return all results (for list operations)")
+    run.add_argument("--page-limit", type=int, default=200,
+                     help="Items per page when paginating (default 200)")
+    run.add_argument("--page-max", type=int, default=10,
+                     help="Max number of pages to fetch when --page-all is used (default 10)")
+    run.add_argument("--page-delay", type=int, default=100,
+                     help="Delay between paginated requests in ms (default 100)")
     run.set_defaults(func=cmd_run)
 
-    schema = subparsers.add_parser("schema", help="Show request/response schema for operationId")
-    schema.add_argument("operation_id")
+    schema = subparsers.add_parser(
+        "schema",
+        help="Show request/response schema for an operation",
+        description=(
+            "Print the request body and response schema for any VBR API operation.\n\n"
+            "Use this to understand what fields to pass in --body when calling an\n"
+            "operation that requires a request payload.\n\n"
+            "Examples:\n"
+            "  bakufu schema CreateJob\n"
+            "  bakufu schema GetAllJobs\n"
+            "  bakufu schema CreateRepository --json\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    schema.add_argument("operation_id", help="Operation ID, e.g. CreateJob, GetAllJobs")
     _add_output_flags(schema)
     schema.set_defaults(func=cmd_schema)
 
-    jobs = subparsers.add_parser("jobs", help="Job operations")
+    repos = subparsers.add_parser(
+        "repos",
+        help="List and inspect backup repositories",
+        description=(
+            "List all backup repositories, show a specific repository, or view capacity states.\n\n"
+            "Examples:\n"
+            "  bakufu repos list\n"
+            "  bakufu repos list --filter 'type=ObjectStorage'\n"
+            "  bakufu repos show <repo-uuid>\n"
+            "  bakufu repos states\n"
+            "  bakufu workflows repositoryHealthReview\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    repos.set_defaults(func=lambda _args: repos.print_help())
+    repos_sub = repos.add_subparsers(dest="repos_cmd")
+    repos_list = repos_sub.add_parser("list", help="List all repositories")
+    _add_output_flags(repos_list)
+    repos_list.add_argument("--filter", help="Client-side filter e.g. 'type=ObjectStorage' or 'name~=prod'")
+    repos_list.add_argument("--refresh", action="store_true", help="Force token refresh")
+    repos_list.add_argument("--dry-run", action="store_true", help="Print curl without executing")
+    repos_list.set_defaults(func=cmd_repos_list)
+    repos_show = repos_sub.add_parser("show", help="Show a repository by UUID")
+    repos_show.add_argument("repo_id", help="Repository UUID")
+    _add_output_flags(repos_show)
+    repos_show.add_argument("--refresh", action="store_true")
+    repos_show.add_argument("--dry-run", action="store_true")
+    repos_show.set_defaults(func=cmd_repos_show)
+    repos_states = repos_sub.add_parser("states", help="Show capacity and availability states for all repositories")
+    _add_output_flags(repos_states)
+    repos_states.add_argument("--filter", help="Client-side filter e.g. 'isUnavailable=true'")
+    repos_states.add_argument("--refresh", action="store_true")
+    repos_states.add_argument("--dry-run", action="store_true")
+    repos_states.set_defaults(func=cmd_repos_states)
+
+    proxies = subparsers.add_parser(
+        "proxies",
+        help="List backup proxies and their task slot states",
+        description=(
+            "List all backup proxies or view real-time task slot utilisation.\n\n"
+            "Examples:\n"
+            "  bakufu proxies list\n"
+            "  bakufu proxies states\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    proxies.set_defaults(func=lambda _args: proxies.print_help())
+    proxies_sub = proxies.add_subparsers(dest="proxies_cmd")
+    proxies_list = proxies_sub.add_parser("list", help="List all backup proxies")
+    _add_output_flags(proxies_list)
+    proxies_list.add_argument("--filter", help="Client-side filter e.g. 'type=Vi'")
+    proxies_list.add_argument("--refresh", action="store_true")
+    proxies_list.add_argument("--dry-run", action="store_true")
+    proxies_list.set_defaults(func=cmd_proxies_list)
+    proxies_states = proxies_sub.add_parser("states", help="Show task slot utilisation for all proxies")
+    _add_output_flags(proxies_states)
+    proxies_states.add_argument("--refresh", action="store_true")
+    proxies_states.add_argument("--dry-run", action="store_true")
+    proxies_states.set_defaults(func=cmd_proxies_states)
+
+    sobr = subparsers.add_parser(
+        "sobr",
+        help="List scale-out backup repositories",
+        description=(
+            "List all scale-out backup repositories (SOBRs) with performance and capacity tier details.\n\n"
+            "Examples:\n"
+            "  bakufu sobr list\n"
+            "  bakufu sobr list --filter 'name~=prod'\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    sobr.set_defaults(func=lambda _args: sobr.print_help())
+    sobr_sub = sobr.add_subparsers(dest="sobr_cmd")
+    sobr_list = sobr_sub.add_parser("list", help="List all scale-out repositories")
+    _add_output_flags(sobr_list)
+    sobr_list.add_argument("--filter", help="Client-side filter e.g. 'name~=prod'")
+    sobr_list.add_argument("--refresh", action="store_true")
+    sobr_list.add_argument("--dry-run", action="store_true")
+    sobr_list.set_defaults(func=cmd_sobr_list)
+
+    jobs = subparsers.add_parser(
+        "jobs",
+        help="Full job lifecycle — list, inspect, control, configure, and migrate jobs",
+        description=(
+            "Complete job management surface covering all VBR job lifecycle operations.\n\n"
+            "Subcommands:\n"
+            "  list            List all backup jobs (supports --filter)\n"
+            "  show            Show full configuration for a specific job\n"
+            "  states          List jobs with execution state and last-run details\n"
+            "  start           Start a job\n"
+            "  stop            Stop a running job\n"
+            "  retry           Retry the last failed session for a job\n"
+            "  enable          Re-enable a disabled job\n"
+            "  disable         Disable a job from scheduled execution\n"
+            "  delete          Delete a job (prompts unless --force)\n"
+            "  clone           Clone an existing job\n"
+            "  update          Full job config update via PUT (--spec JSON or @file)\n"
+            "  quick-backup    Start a vSphere quick backup\n"
+            "  export          Export jobs to a portable file\n"
+            "  import          Import jobs from an export file\n"
+            "  apply-policy    Apply agent backup policy configuration\n"
+            "  clear-cache     Clear agent backup job cache\n\n"
+            "Examples:\n"
+            "  bakufu jobs list\n"
+            "  bakufu jobs list --filter 'isDisabled=false'\n"
+            "  bakufu jobs states --last-result-filter Failed\n"
+            "  bakufu jobs show <uuid>\n"
+            "  bakufu jobs start <uuid>\n"
+            "  bakufu jobs stop <uuid>\n"
+            "  bakufu jobs retry <uuid>\n"
+            "  bakufu jobs disable <uuid>\n"
+            "  bakufu jobs enable <uuid>\n"
+            "  bakufu jobs clone <uuid> --name 'My Job Copy'\n"
+            "  bakufu jobs update <uuid> --spec @job.json\n"
+            "  bakufu jobs delete <uuid>\n"
+            "  bakufu jobs export --job-ids <uuid1>,<uuid2>\n"
+            "  bakufu jobs import jobs_export.json\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     jobs.set_defaults(func=lambda _args: jobs.print_help())
     jobs_sub = jobs.add_subparsers(dest="jobs_cmd")
-    jobs_list = jobs_sub.add_parser("list", help="List jobs")
-    _add_output_flags(jobs_list)
-    jobs_list.add_argument("--refresh", action="store_true")
-    jobs_list.add_argument("--dry-run", action="store_true")
-    jobs_list.set_defaults(func=cmd_jobs_list)
-    jobs_start = jobs_sub.add_parser("start", help="Start a job by id")
-    jobs_start.add_argument("job_id")
-    _add_output_flags(jobs_start)
-    jobs_start.add_argument("--refresh", action="store_true")
-    jobs_start.add_argument("--dry-run", action="store_true")
-    jobs_start.set_defaults(func=cmd_jobs_start)
 
-    sessions = subparsers.add_parser("sessions", help="Session operations")
+    def _jobs_common(p):
+        _add_output_flags(p)
+        p.add_argument("--refresh", action="store_true", help="Force token refresh")
+        p.add_argument("--dry-run", action="store_true", help="Print curl without executing")
+
+    def _jobs_id_cmd(name, help_text, func, extra=None):
+        p = jobs_sub.add_parser(name, help=help_text)
+        p.add_argument("job_id", help="Job UUID")
+        _jobs_common(p)
+        if extra:
+            extra(p)
+        p.set_defaults(func=func)
+        return p
+
+    jobs_list = jobs_sub.add_parser("list", help="List all backup jobs")
+    _jobs_common(jobs_list)
+    jobs_list.add_argument("--filter", help="Client-side filter e.g. 'isDisabled=false' or 'name~=prod'")
+    jobs_list.set_defaults(func=cmd_jobs_list)
+
+    jobs_states = jobs_sub.add_parser("states", help="List jobs with execution state and last-run details")
+    _jobs_common(jobs_states)
+    jobs_states.add_argument("--limit", type=int, default=200, help="Max results (default 200)")
+    jobs_states.add_argument("--name-filter", help="Filter by job name pattern")
+    jobs_states.add_argument("--type-filter", help="Filter by job type e.g. VSphereBackup, WindowsAgentBackup")
+    jobs_states.add_argument("--last-result-filter", help="Filter by last result: Success, Warning, Failed, None")
+    jobs_states.add_argument("--status-filter", help="Filter by current status: Running, Inactive, Disabled")
+    jobs_states.add_argument("--repo-id", help="Filter by repository UUID")
+    jobs_states.add_argument("--last-run-after", help="Filter to jobs that ran after this ISO8601 timestamp")
+    jobs_states.add_argument("--high-priority", action="store_true", help="Return high priority jobs only")
+    jobs_states.add_argument("--filter", help="Client-side filter on the result set")
+    jobs_states.set_defaults(func=cmd_jobs_states)
+
+    _jobs_id_cmd("show", "Show full configuration for a job", cmd_jobs_show)
+    _jobs_id_cmd("start", "Start a backup job", cmd_jobs_start)
+    _jobs_id_cmd("stop", "Stop a running backup job", cmd_jobs_stop)
+    _jobs_id_cmd("retry", "Retry the last failed session for a job", cmd_jobs_retry)
+    _jobs_id_cmd("enable", "Re-enable a disabled job", cmd_jobs_enable)
+    _jobs_id_cmd("disable", "Disable a job from scheduled execution", cmd_jobs_disable)
+
+    def _add_delete_flags(p):
+        p.add_argument("--force", action="store_true", help="Skip confirmation prompt")
+    _jobs_id_cmd("delete", "Delete a job (prompts for confirmation unless --force)", cmd_jobs_delete, _add_delete_flags)
+
+    def _add_clone_flags(p):
+        p.add_argument("--name", help="Name for the cloned job (optional — server assigns one if omitted)")
+    _jobs_id_cmd("clone", "Clone an existing job", cmd_jobs_clone, _add_clone_flags)
+
+    jobs_update = jobs_sub.add_parser("update", help="Full job config update via PUT (--spec JSON or @file)")
+    jobs_update.add_argument("job_id", help="Job UUID")
+    jobs_update.add_argument("--spec", required=True, help="Full job spec as JSON string or @file path")
+    _jobs_common(jobs_update)
+    jobs_update.set_defaults(func=cmd_jobs_update)
+
+    jobs_qb = jobs_sub.add_parser("quick-backup", help="Start a vSphere quick backup")
+    jobs_qb.add_argument("--spec", help="Quick backup spec as JSON or @file")
+    _jobs_common(jobs_qb)
+    jobs_qb.set_defaults(func=cmd_jobs_quick_backup)
+
+    jobs_export = jobs_sub.add_parser("export", help="Export jobs to a portable JSON file")
+    jobs_export.add_argument("--job-ids", help="Comma-separated job UUIDs to export (omit for all)")
+    jobs_export.add_argument("--spec", help="Full export spec as JSON or @file (overrides --job-ids)")
+    jobs_export.add_argument("--output-file", help="Write export to this file instead of stdout")
+    _jobs_common(jobs_export)
+    jobs_export.set_defaults(func=cmd_jobs_export)
+
+    jobs_import = jobs_sub.add_parser("import", help="Import jobs from an export file")
+    jobs_import.add_argument("import_file", help="Path to jobs export JSON file")
+    _jobs_common(jobs_import)
+    jobs_import.set_defaults(func=cmd_jobs_import)
+
+    _jobs_id_cmd("apply-policy", "Apply agent backup policy configuration", cmd_jobs_apply_policy)
+    _jobs_id_cmd("clear-cache", "Clear agent backup job cache", cmd_jobs_clear_cache)
+
+    sessions = subparsers.add_parser(
+        "sessions",
+        help="List, inspect and view logs for backup sessions",
+        description=(
+            "List recent sessions, show a specific session's status, or view its log output.\n\n"
+            "Examples:\n"
+            "  bakufu sessions list\n"
+            "  bakufu sessions list --result Failed\n"
+            "  bakufu sessions list --job-id <uuid> --limit 20\n"
+            "  bakufu sessions show <session-uuid>\n"
+            "  bakufu sessions logs <session-uuid>\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     sessions.set_defaults(func=lambda _args: sessions.print_help())
     sessions_sub = sessions.add_subparsers(dest="sessions_cmd")
-    sessions_show = sessions_sub.add_parser("show", help="Show a session")
-    sessions_show.add_argument("session_id")
+    sessions_list = sessions_sub.add_parser("list", help="List recent sessions")
+    _add_output_flags(sessions_list)
+    sessions_list.add_argument("--limit", type=int, default=100,
+                               help="Max number of sessions to return (default 100)")
+    sessions_list.add_argument("--job-id", help="Filter by job UUID")
+    sessions_list.add_argument("--state", help="Filter by state: Starting, Working, Stopped, etc.")
+    sessions_list.add_argument("--result", help="Filter by result: Success, Warning, Failed, None")
+    sessions_list.add_argument("--filter", help="Client-side filter e.g. 'result=Failed' or 'jobName~=prod'")
+    sessions_list.add_argument("--refresh", action="store_true")
+    sessions_list.add_argument("--dry-run", action="store_true")
+    sessions_list.set_defaults(func=cmd_sessions_list)
+    sessions_show = sessions_sub.add_parser("show", help="Show session status by UUID")
+    sessions_show.add_argument("session_id", help="Session UUID")
     _add_output_flags(sessions_show)
-    sessions_show.add_argument("--refresh", action="store_true")
-    sessions_show.add_argument("--dry-run", action="store_true")
+    sessions_show.add_argument("--refresh", action="store_true", help="Force token refresh")
+    sessions_show.add_argument("--dry-run", action="store_true", help="Print curl without executing")
     sessions_show.set_defaults(func=cmd_sessions_show)
-    sessions_logs = sessions_sub.add_parser("logs", help="Show session logs")
-    sessions_logs.add_argument("session_id")
+    sessions_logs = sessions_sub.add_parser("logs", help="Show log entries for a session")
+    sessions_logs.add_argument("session_id", help="Session UUID")
     _add_output_flags(sessions_logs)
-    sessions_logs.add_argument("--refresh", action="store_true")
-    sessions_logs.add_argument("--dry-run", action="store_true")
+    sessions_logs.add_argument("--refresh", action="store_true", help="Force token refresh")
+    sessions_logs.add_argument("--dry-run", action="store_true", help="Print curl without executing")
     sessions_logs.set_defaults(func=cmd_sessions_logs)
 
     _workflow_choices = [k.replace("bakufu_workflows_", "") for k in WORKFLOWS]
@@ -1530,52 +2318,174 @@ def build_parser():
     _add_output_flags(helpers_cmd)
     helpers_cmd.set_defaults(func=cmd_helper)
 
-    skills = subparsers.add_parser("skills", help="Skills library")
+    skills = subparsers.add_parser(
+        "skills",
+        help="Browse the skills library (helpers, recipes, personas)",
+        description=(
+            "Browse the full skills library — helpers, recipes, roles, and personas.\n\n"
+            "Skills are the reference layer: each skill documents a task, the commands\n"
+            "needed to complete it, prerequisites, and tips. They map directly to what\n"
+            "an AI agent would execute via the MCP server.\n\n"
+            "Examples:\n"
+            "  bakufu skills list\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     skills.set_defaults(func=lambda _args: skills.print_help())
     skills_sub = skills.add_subparsers(dest="skills_cmd")
-    skills_list = skills_sub.add_parser("list", help="List skills")
+    skills_list = skills_sub.add_parser("list", help="Print the full skills index")
     skills_list.set_defaults(func=cmd_skills_list)
 
-    mcp = subparsers.add_parser("mcp", help="Start MCP server over stdio")
-    mcp.add_argument("-s", "--services", help="Comma-separated services to expose, or 'all'", default="all")
-    mcp.add_argument("-e", "--helpers", action="store_true", default=True, help="Expose helper tools (default: on)")
-    mcp.add_argument("--no-helpers", action="store_false", dest="helpers", help="Disable helper tools")
-    mcp.add_argument("-w", "--workflows", action="store_true", default=True, help="Expose workflow tools (default: on)")
-    mcp.add_argument("--no-workflows", action="store_false", dest="workflows", help="Disable workflow tools")
+    mcp = subparsers.add_parser(
+        "mcp",
+        help="Start the MCP server for AI agent integration",
+        description=(
+            "Start bakufu as an MCP (Model Context Protocol) server over stdio.\n\n"
+            "This allows AI agents (Claude, Cursor, etc.) to use bakufu as a tool\n"
+            "server, calling VBR API operations, helpers, and workflows on your behalf.\n\n"
+            "By default all services, helpers, and workflows are exposed. Use flags\n"
+            "to restrict the surface area if needed.\n\n"
+            "Examples:\n"
+            "  bakufu mcp\n"
+            "  bakufu mcp --services Jobs,Repositories\n"
+            "  bakufu mcp --no-helpers\n"
+            "  bakufu mcp --no-workflows\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    mcp.add_argument("-s", "--services", default="all",
+                     help="Comma-separated service groups to expose, or 'all' (default: all)")
+    mcp.add_argument("-e", "--helpers", action="store_true", default=True,
+                     help="Expose helper tools to the agent (default: on)")
+    mcp.add_argument("--no-helpers", action="store_false", dest="helpers",
+                     help="Disable helper tools")
+    mcp.add_argument("-w", "--workflows", action="store_true", default=True,
+                     help="Expose workflow tools to the agent (default: on)")
+    mcp.add_argument("--no-workflows", action="store_false", dest="workflows",
+                     help="Disable workflow tools")
     mcp.set_defaults(func=cmd_mcp)
 
-    license_cmd = subparsers.add_parser("license", help="License operations")
+    mcp_config = subparsers.add_parser(
+        "mcp-config",
+        help="Print MCP server config JSON for Claude Desktop, Cursor, and other AI tools",
+        description=(
+            "Generate a ready-to-paste MCP server configuration block.\n\n"
+            "Paste the output into your AI tool's config file to connect it to your\n"
+            "VBR server via bakufu.\n\n"
+            "Examples:\n"
+            "  bakufu mcp-config\n"
+            "  bakufu mcp-config --account lab\n"
+            "  bakufu mcp-config --services Jobs,Repositories\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    mcp_config.add_argument("--services", default="all",
+                            help="Limit exposed services, e.g. 'Jobs,Repositories' (default: all)")
+    mcp_config.set_defaults(func=cmd_mcp_config)
+
+    update_cmd = subparsers.add_parser(
+        "update",
+        help="Update bakufu to the latest release",
+        description=(
+            "Check for a newer release on GitHub and install it.\n\n"
+            "Examples:\n"
+            "  bakufu update           # check and install latest\n"
+            "  bakufu update --check   # check only, do not install\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    update_cmd.add_argument("--check", action="store_true",
+                            help="Check for update without installing")
+    update_cmd.set_defaults(func=cmd_update)
+
+    doctor_cmd = subparsers.add_parser(
+        "doctor",
+        help="Run connectivity and config diagnostics",
+        description=(
+            "Check the full bakufu setup: version, auth config, token state,\n"
+            "API reachability, swagger spec, and data files.\n\n"
+            "Examples:\n"
+            "  bakufu doctor\n"
+            "  bakufu doctor --account lab\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    doctor_cmd.set_defaults(func=cmd_doctor)
+
+    license_cmd = subparsers.add_parser(
+        "license",
+        help="View and install the VBR license",
+        description=(
+            "Show the currently installed VBR license or install a new one from a .lic file.\n\n"
+            "Examples:\n"
+            "  bakufu license show\n"
+            "  bakufu license show --json\n"
+            "  bakufu license install-file /path/to/veeam.lic\n"
+            "  bakufu license install-file /path/to/veeam.lic --force-standalone-mode\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     license_cmd.set_defaults(func=lambda _args: license_cmd.print_help())
     license_sub = license_cmd.add_subparsers(dest="license_cmd")
     license_show = license_sub.add_parser("show", help="Show installed license details")
     _add_output_flags(license_show)
-    license_show.add_argument("--refresh", action="store_true")
-    license_show.add_argument("--dry-run", action="store_true")
+    license_show.add_argument("--refresh", action="store_true", help="Force token refresh")
+    license_show.add_argument("--dry-run", action="store_true", help="Print curl without executing")
     license_show.set_defaults(func=cmd_license_show)
-    license_install = license_sub.add_parser("install-file", help="Install license from local .lic file")
-    license_install.add_argument("license_file", help="Path to .lic file")
-    license_install.add_argument("--force-standalone-mode", action="store_true")
+    license_install = license_sub.add_parser("install-file",
+                                             help="Install a VBR license from a local .lic file")
+    license_install.add_argument("license_file", help="Path to the .lic file")
+    license_install.add_argument("--force-standalone-mode", action="store_true",
+                                 help="Force standalone (non-Enterprise Manager) mode")
     _add_output_flags(license_install)
-    license_install.add_argument("--refresh", action="store_true")
-    license_install.add_argument("--dry-run", action="store_true")
+    license_install.add_argument("--refresh", action="store_true", help="Force token refresh")
+    license_install.add_argument("--dry-run", action="store_true", help="Print curl without executing")
     license_install.set_defaults(func=cmd_license_install_file)
 
-    completion = subparsers.add_parser("completion", help="Print shell completion script")
-    completion.add_argument("shell", choices=["bash", "zsh"])
+    completion = subparsers.add_parser(
+        "completion",
+        help="Print shell completion script for bash or zsh",
+        description=(
+            "Print a shell completion script that enables tab-completion for bakufu.\n\n"
+            "Examples:\n"
+            "  bakufu completion zsh >> ~/.zshrc && source ~/.zshrc\n"
+            "  bakufu completion bash >> ~/.bashrc && source ~/.bashrc\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    completion.add_argument("shell", choices=["bash", "zsh"],
+                            help="Shell to generate completion for")
     completion.set_defaults(func=cmd_completion)
 
-    getting_started = subparsers.add_parser("getting-started", help="Show quick-start guide and optional read-only demo")
-    getting_started.add_argument("--demo", action="store_true", help="Run read-only startup smoke checks")
-    getting_started.add_argument("--script", action="store_true", help="Print a copy-paste demo script")
+    getting_started = subparsers.add_parser(
+        "getting-started",
+        help="Quick-start guide, persona playbooks, and demo mode",
+        description=(
+            "Print a quick-start guide or role-specific onboarding playbook.\n\n"
+            "Use --demo to run a set of read-only smoke checks against your VBR server.\n"
+            "Use --persona to get a tailored command walkthrough for your role.\n\n"
+            "Examples:\n"
+            "  bakufu getting-started\n"
+            "  bakufu getting-started --demo\n"
+            "  bakufu getting-started --script\n"
+            "  bakufu getting-started --persona backup-admin\n"
+            "  bakufu getting-started --persona security-admin\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    getting_started.add_argument("--demo", action="store_true",
+                                 help="Run read-only startup smoke checks against your VBR server")
+    getting_started.add_argument("--script", action="store_true",
+                                 help="Print a copy-paste demo script you can run yourself")
     getting_started.add_argument(
         "--persona",
         choices=["backup-admin", "backup-operator", "security-admin", "dr-operator", "auditor"],
-        help="Print detailed onboarding for a specific backup persona",
+        help="Print a tailored onboarding playbook for a specific role",
     )
     _add_output_flags(getting_started)
     getting_started.set_defaults(func=cmd_getting_started)
 
-    version_cmd = subparsers.add_parser("version", help="Print CLI version")
+    version_cmd = subparsers.add_parser("version", help="Print the installed bakufu version")
     version_cmd.set_defaults(func=cmd_version)
 
     return parser
@@ -1588,8 +2498,10 @@ def _rewrite_shorthand(argv):
         return argv
     known = {
         "auth", "auth-setup", "auth-login", "call", "services", "operations",
-        "run", "schema", "jobs", "sessions", "workflows", "helpers", "skills", "mcp",
-        "license", "completion", "getting-started", "version", "-h", "--help",
+        "run", "schema", "jobs", "sessions", "repos", "proxies", "sobr",
+        "workflows", "helpers", "skills", "mcp", "mcp-config",
+        "license", "completion", "getting-started", "update", "doctor", "version",
+        "-h", "--help",
     }
     first = argv[0]
     if first in known:

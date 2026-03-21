@@ -175,6 +175,72 @@ def helper_malware_scan(args: dict) -> dict:
     return json.loads(resp["body"]) if resp.get("body") else {}
 
 
+def helper_jobs_stop(args: dict) -> dict:
+    job_id = args.get("jobId")
+    if not job_id:
+        raise ValueError("jobId is required")
+    account = args.get("account")
+    resp = call_api(f"/api/v1/jobs/{job_id}/stop", method="POST", data={}, pretty=False, account=account)
+    return json.loads(resp["body"]) if resp.get("body") else {}
+
+
+def helper_jobs_enable(args: dict) -> dict:
+    job_id = args.get("jobId")
+    if not job_id:
+        raise ValueError("jobId is required")
+    account = args.get("account")
+    resp = call_api(f"/api/v1/jobs/{job_id}/enable", method="POST", data={}, pretty=False, account=account)
+    return json.loads(resp["body"]) if resp.get("body") else {}
+
+
+def helper_jobs_disable(args: dict) -> dict:
+    job_id = args.get("jobId")
+    if not job_id:
+        raise ValueError("jobId is required")
+    account = args.get("account")
+    resp = call_api(f"/api/v1/jobs/{job_id}/disable", method="POST", data={}, pretty=False, account=account)
+    return json.loads(resp["body"]) if resp.get("body") else {}
+
+
+def helper_jobs_retry(args: dict) -> dict:
+    job_id = args.get("jobId")
+    if not job_id:
+        raise ValueError("jobId is required")
+    account = args.get("account")
+    resp = call_api(f"/api/v1/jobs/{job_id}/retry", method="POST", data={}, pretty=False, account=account)
+    return json.loads(resp["body"]) if resp.get("body") else {}
+
+
+def helper_jobs_clone(args: dict) -> dict:
+    job_id = args.get("jobId")
+    if not job_id:
+        raise ValueError("jobId is required")
+    account = args.get("account")
+    body: dict = {}
+    if args.get("name"):
+        body["name"] = args["name"]
+    resp = call_api(f"/api/v1/jobs/{job_id}/clone", method="POST", data=body, pretty=False, account=account)
+    return json.loads(resp["body"]) if resp.get("body") else {}
+
+
+def helper_jobs_states(args: dict) -> dict:
+    account = args.get("account")
+    params: dict = {}
+    for key, param in [
+        ("nameFilter", "nameFilter"), ("typeFilter", "typeFilter"),
+        ("lastResultFilter", "lastResultFilter"), ("statusFilter", "statusFilter"),
+        ("repositoryIdFilter", "repositoryIdFilter"),
+        ("lastRunAfterFilter", "lastRunAfterFilter"),
+        ("limit", "limit"),
+    ]:
+        if args.get(key):
+            params[param] = args[key]
+    if args.get("isHighPriorityJobFilter"):
+        params["isHighPriorityJobFilter"] = "true"
+    resp = call_api("/api/v1/jobs/states", params=params, pretty=False, account=account)
+    return json.loads(resp["body"]) if resp.get("body") else {}
+
+
 HELPERS = {
     "bakufu_jobs_startByName": {
         "description": "Start a backup job by name and return its session id.",
@@ -341,7 +407,198 @@ HELPERS = {
         },
         "handler": helper_malware_scan,
     },
+    "bakufu_jobs_stop": {
+        "description": "Stop a currently running backup job.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "jobId": {"type": "string", "description": "Veeam job UUID"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+            "required": ["jobId"],
+        },
+        "handler": helper_jobs_stop,
+    },
+    "bakufu_jobs_enable": {
+        "description": "Re-enable a disabled backup job.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "jobId": {"type": "string", "description": "Veeam job UUID"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+            "required": ["jobId"],
+        },
+        "handler": helper_jobs_enable,
+    },
+    "bakufu_jobs_disable": {
+        "description": "Disable a backup job from scheduled execution.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "jobId": {"type": "string", "description": "Veeam job UUID"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+            "required": ["jobId"],
+        },
+        "handler": helper_jobs_disable,
+    },
+    "bakufu_jobs_retry": {
+        "description": "Retry the last failed session for a backup job.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "jobId": {"type": "string", "description": "Veeam job UUID"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+            "required": ["jobId"],
+        },
+        "handler": helper_jobs_retry,
+    },
+    "bakufu_jobs_clone": {
+        "description": "Clone an existing backup job, optionally providing a new name.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "jobId": {"type": "string", "description": "Veeam job UUID to clone"},
+                "name": {"type": "string", "description": "Name for the cloned job (optional)"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+            "required": ["jobId"],
+        },
+        "handler": helper_jobs_clone,
+    },
+    "bakufu_jobs_states": {
+        "description": "List jobs with execution state and last-run details, with rich server-side filtering.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "nameFilter": {"type": "string", "description": "Filter by job name pattern"},
+                "typeFilter": {"type": "string", "description": "Filter by job type e.g. VSphereBackup"},
+                "lastResultFilter": {"type": "string", "description": "Filter by last result: Success, Warning, Failed, None"},
+                "statusFilter": {"type": "string", "description": "Filter by current status: Running, Inactive, Disabled"},
+                "repositoryIdFilter": {"type": "string", "description": "Filter by repository UUID"},
+                "lastRunAfterFilter": {"type": "string", "description": "ISO8601 timestamp — return jobs that ran after this"},
+                "isHighPriorityJobFilter": {"type": "boolean", "description": "Return high priority jobs only"},
+                "limit": {"type": "integer", "description": "Maximum results (default 200)"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+        },
+        "handler": helper_jobs_states,
+    },
 }
+
+def workflow_daily_job_health(account, arguments):
+    resp = call_api("/api/v1/jobs", pretty=False, account=account)
+    jobs = _extract_jobs(json.loads(resp["body"]))
+    sessions_resp = call_api("/api/v1/sessions", params={"limit": 500}, pretty=False, account=account)
+    sessions = _extract_sessions(json.loads(sessions_resp["body"]))
+    # Build map: jobId -> most recent session
+    latest: dict = {}
+    for s in sessions:
+        jid = s.get("jobId")
+        if not jid:
+            continue
+        existing = latest.get(jid)
+        if not existing or (s.get("creationTime", "") > existing.get("creationTime", "")):
+            latest[jid] = s
+    buckets: dict = {"Success": [], "Warning": [], "Failed": [], "Running": [], "None": []}
+    for j in jobs:
+        jid = j.get("id")
+        s = latest.get(jid)
+        result = s.get("result") if s else None
+        state = s.get("state") if s else None
+        if state in {"Starting", "Working"}:
+            bucket = "Running"
+        elif result in buckets:
+            bucket = result
+        else:
+            bucket = "None"
+        buckets[bucket].append({
+            "jobId": jid,
+            "jobName": j.get("name"),
+            "sessionId": s.get("id") if s else None,
+            "result": result,
+            "state": state,
+            "endTime": s.get("endTime") if s else None,
+        })
+    return {
+        "summary": {k: len(v) for k, v in buckets.items()},
+        "jobs": buckets,
+    }
+
+
+def workflow_rerun_failed_job(account, arguments):
+    job_id = arguments.get("jobId")
+    job_name = arguments.get("jobName")
+    # Resolve name -> id if needed
+    if not job_id and job_name:
+        jobs_resp = call_api("/api/v1/jobs", pretty=False, account=account)
+        jobs = _extract_jobs(json.loads(jobs_resp["body"]))
+        match = next((j for j in jobs if j.get("name") == job_name), None)
+        if not match:
+            raise ValueError(f"Job not found: {job_name}")
+        job_id = match.get("id")
+    if not job_id:
+        raise ValueError("jobId or jobName is required")
+    # Get latest failed session for context
+    sessions_resp = call_api("/api/v1/sessions", params={"limit": 200}, pretty=False, account=account)
+    sessions = _extract_sessions(json.loads(sessions_resp["body"]))
+    job_sessions = [s for s in sessions if s.get("jobId") == job_id]
+    job_sessions.sort(key=lambda s: s.get("creationTime") or "", reverse=True)
+    last_failed = next((s for s in job_sessions if s.get("result") == "Failed"), None)
+    # Start the job
+    start_resp = call_api(f"/api/v1/jobs/{job_id}/start", method="POST", data={}, pretty=False, account=account)
+    start_data = json.loads(start_resp["body"]) if start_resp.get("body") else {}
+    result: dict = {"jobId": job_id, "lastFailed": last_failed, "start": start_data}
+    # Optionally follow the new session
+    if arguments.get("wait") and start_data.get("id"):
+        session_id = start_data["id"]
+        interval = int(arguments.get("intervalMs", 2000))
+        timeout = int(arguments.get("timeoutMs", 300000))
+        start_ts = time.time()
+        while True:
+            s_resp = call_api(f"/api/v1/sessions/{session_id}", pretty=False, account=account)
+            s_data = json.loads(s_resp["body"]) if s_resp.get("body") else {}
+            if s_data.get("state") in {"Stopped", "Failed", "Success", "Warning"}:
+                result["session"] = s_data
+                break
+            if (time.time() - start_ts) * 1000 > timeout:
+                result["session"] = {"state": "Timeout"}
+                break
+            time.sleep(interval / 1000.0)
+    return result
+
+
+def workflow_repository_health_review(account, arguments):
+    repos_resp = call_api("/api/v1/backupInfrastructure/repositories", pretty=False, account=account)
+    repos = json.loads(repos_resp["body"]) if repos_resp.get("body") else {}
+    repo_list = repos.get("data", repos) if isinstance(repos, dict) else repos
+    states_resp = call_api("/api/v1/backupInfrastructure/repositories/states", pretty=False, account=account)
+    states_data = json.loads(states_resp["body"]) if states_resp.get("body") else {}
+    states_list = states_data.get("data", []) if isinstance(states_data, dict) else []
+    states_map = {s.get("id"): s for s in states_list if s.get("id")}
+    health = []
+    for r in (repo_list if isinstance(repo_list, list) else []):
+        rid = r.get("id")
+        state = states_map.get(rid, {})
+        capacity = state.get("capacityGB")
+        free = state.get("freeSpaceGB")
+        used_pct = None
+        if capacity and free is not None and capacity > 0:
+            used_pct = round((capacity - free) / capacity * 100, 1)
+        health.append({
+            "id": rid,
+            "name": r.get("name"),
+            "type": r.get("type"),
+            "capacityGB": capacity,
+            "freeSpaceGB": free,
+            "usedPct": used_pct,
+            "isOutOfDate": state.get("isOutOfDate"),
+            "isUnavailable": state.get("isUnavailable"),
+        })
+    return {"repositories": health}
+
 
 WORKFLOWS = {
     "bakufu_workflows_investigateFailedJob": {
@@ -392,6 +649,58 @@ WORKFLOWS = {
         "inputSchema": {
             "type": "object",
             "properties": {
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+        },
+    },
+    "bakufu_workflows_dailyJobHealth": {
+        "description": "Summarize job results for the last 24 hours, bucketed by Success, Warning, Failed, Running, and None.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+        },
+    },
+    "bakufu_workflows_rerunFailedJob": {
+        "description": "Find the latest failed session for a job, start the job again, and optionally wait for completion.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "jobId": {"type": "string", "description": "Veeam job UUID (provide jobId or jobName)"},
+                "jobName": {"type": "string", "description": "Exact job name (provide jobId or jobName)"},
+                "wait": {"type": "boolean", "description": "Wait for the new session to complete"},
+                "intervalMs": {"type": "integer", "description": "Poll interval ms when wait=true (default 2000)"},
+                "timeoutMs": {"type": "integer", "description": "Max wait ms when wait=true (default 300000)"},
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+        },
+    },
+    "bakufu_workflows_repositoryHealthReview": {
+        "description": "List all repositories with capacity utilisation, free space, and availability status.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+        },
+    },
+    "bakufu_workflows_weeklyJobHealth": {
+        "description": "Summarize job results over the last 7 days, bucketed by Success, Warning, Failed, Running, and None.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "account": {"type": "string", "description": "Named account to use for authentication"},
+            },
+        },
+    },
+    "bakufu_workflows_emergencyStopJob": {
+        "description": "Stop a running job by ID or name and return its last session logs.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "jobId": {"type": "string", "description": "Veeam job UUID (provide jobId or jobName)"},
+                "jobName": {"type": "string", "description": "Exact job name (provide jobId or jobName)"},
                 "account": {"type": "string", "description": "Named account to use for authentication"},
             },
         },
@@ -478,7 +787,85 @@ def run_workflow(name: str, arguments: dict):
                 immutability.append({"id": repo.get("id"), "name": repo.get("name"), "immutability": imm})
         return {"immutability": immutability}
 
+    if name == "bakufu_workflows_dailyJobHealth":
+        return workflow_daily_job_health(account, arguments)
+
+    if name == "bakufu_workflows_rerunFailedJob":
+        return workflow_rerun_failed_job(account, arguments)
+
+    if name == "bakufu_workflows_repositoryHealthReview":
+        return workflow_repository_health_review(account, arguments)
+
+    if name == "bakufu_workflows_weeklyJobHealth":
+        return workflow_weekly_job_health(account, arguments)
+
+    if name == "bakufu_workflows_emergencyStopJob":
+        return workflow_emergency_stop_job(account, arguments)
+
     raise ValueError(f"Unknown workflow: {name}")
+
+
+def workflow_weekly_job_health(account, arguments):
+    """7-day health summary — same logic as daily but fetches more sessions."""
+    resp = call_api("/api/v1/jobs", pretty=False, account=account)
+    jobs = _extract_jobs(json.loads(resp["body"]))
+    sessions_resp = call_api("/api/v1/sessions", params={"limit": 1000}, pretty=False, account=account)
+    sessions = _extract_sessions(json.loads(sessions_resp["body"]))
+    latest: dict = {}
+    for s in sessions:
+        jid = s.get("jobId")
+        if not jid:
+            continue
+        existing = latest.get(jid)
+        if not existing or (s.get("creationTime", "") > existing.get("creationTime", "")):
+            latest[jid] = s
+    buckets: dict = {"Success": [], "Warning": [], "Failed": [], "Running": [], "None": []}
+    for j in jobs:
+        jid = j.get("id")
+        s = latest.get(jid)
+        result = s.get("result") if s else None
+        state = s.get("state") if s else None
+        bucket = "Running" if state in {"Starting", "Working"} else (result if result in buckets else "None")
+        buckets[bucket].append({
+            "jobId": jid,
+            "jobName": j.get("name"),
+            "sessionId": s.get("id") if s else None,
+            "result": result,
+            "state": state,
+            "endTime": s.get("endTime") if s else None,
+        })
+    return {
+        "window": "7d",
+        "summary": {k: len(v) for k, v in buckets.items()},
+        "jobs": buckets,
+    }
+
+
+def workflow_emergency_stop_job(account, arguments):
+    """Stop a running job and return its last session logs."""
+    job_id = arguments.get("jobId")
+    job_name = arguments.get("jobName")
+    if not job_id and job_name:
+        jobs_resp = call_api("/api/v1/jobs", pretty=False, account=account)
+        jobs = _extract_jobs(json.loads(jobs_resp["body"]))
+        match = next((j for j in jobs if j.get("name") == job_name), None)
+        if not match:
+            raise ValueError(f"Job not found: {job_name}")
+        job_id = match.get("id")
+    if not job_id:
+        raise ValueError("jobId or jobName is required")
+    stop_resp = call_api(f"/api/v1/jobs/{job_id}/stop", method="POST", data={}, pretty=False, account=account)
+    stop_data = json.loads(stop_resp["body"]) if stop_resp.get("body") else {}
+    sessions_resp = call_api("/api/v1/sessions", params={"limit": 10}, pretty=False, account=account)
+    sessions = _extract_sessions(json.loads(sessions_resp["body"]))
+    job_sessions = [s for s in sessions if s.get("jobId") == job_id]
+    job_sessions.sort(key=lambda s: s.get("creationTime") or "", reverse=True)
+    last_session = job_sessions[0] if job_sessions else None
+    logs = {}
+    if last_session:
+        logs_resp = call_api(f"/api/v1/sessions/{last_session['id']}/logs", pretty=False, account=account)
+        logs = json.loads(logs_resp["body"]) if logs_resp.get("body") else {}
+    return {"jobId": job_id, "stop": stop_data, "lastSession": last_session, "logs": logs}
 
 
 def run_helper(name: str, arguments: dict):
