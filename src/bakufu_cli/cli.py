@@ -15,6 +15,7 @@ from .swagger import SwaggerSpec
 from .accounts import add_account, list_accounts, set_default
 from .mcp_server import serve
 from .mcp_helpers import run_workflow, run_helper, WORKFLOWS, HELPERS
+from .accounts import BAKUFU_HOME
 from .auth_setup import setup as auth_setup
 
 # When running as a PyInstaller frozen binary, bundled data files live under
@@ -26,6 +27,55 @@ else:
     _DATA_ROOT = Path(__file__).resolve().parents[2]
 
 DOCS_SKILLS_PATH = _DATA_ROOT / "docs" / "skills.md"
+JOBS_INDEX_FILE = BAKUFU_HOME / "job-index.json"
+
+
+def _save_job_index(jobs: list, account: Optional[str]) -> None:
+    """Persist a numbered job index to disk, keyed by account name."""
+    key = account or "default"
+    index: Dict[str, Any] = {}
+    for i, job in enumerate(jobs, start=1):
+        job_id = job.get("id") or job.get("jobId") or ""
+        if not job_id:
+            continue
+        index[str(i)] = {
+            "id": job_id,
+            "name": job.get("name") or "",
+            "type": job.get("type") or job.get("jobType") or "",
+        }
+    try:
+        BAKUFU_HOME.mkdir(parents=True, exist_ok=True)
+        existing: Dict[str, Any] = {}
+        if JOBS_INDEX_FILE.exists():
+            try:
+                existing = json.loads(JOBS_INDEX_FILE.read_text())
+            except (json.JSONDecodeError, OSError):
+                pass
+        existing[key] = index
+        JOBS_INDEX_FILE.write_text(json.dumps(existing, indent=2))
+    except OSError:
+        pass
+
+
+def _resolve_job_id(value: str, account: Optional[str]) -> str:
+    """Resolve a job number (e.g. '3') to its UUID via the persisted index.
+
+    If *value* is not a pure digit string, it is returned unchanged (UUID pass-through).
+    Falls back to returning *value* unchanged if the index file is missing or the
+    entry is not found.
+    """
+    if not value or not value.strip().isdigit():
+        return value
+    key = account or "default"
+    try:
+        if JOBS_INDEX_FILE.exists():
+            data = json.loads(JOBS_INDEX_FILE.read_text())
+            entry = data.get(key, {}).get(value.strip())
+            if entry and entry.get("id"):
+                return entry["id"]
+    except (json.JSONDecodeError, OSError, KeyError):
+        pass
+    return value
 
 
 class CliError(Exception):
@@ -414,14 +464,53 @@ def cmd_schema(args):
 
 def cmd_jobs_list(args):
     response = call_api("/api/v1/jobs", pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
+    if args.dry_run:
+        _print_response(response, args)
+        return
+
+    body_str = response.get("body") or "{}"
+    try:
+        body = json.loads(body_str)
+    except json.JSONDecodeError:
+        _print_response(response, args)
+        return
+
+    # Client-side filter
     if getattr(args, "filter", None):
-        body = json.loads(response.get("body") or "{}")
-        response = dict(response, body=json.dumps(_apply_filter(body, args.filter)))
+        body = _apply_filter(body, args.filter)
+
+    # Locate the jobs list inside the response envelope
+    jobs: Optional[list] = None
+    list_key: Optional[str] = None
+    for field in ("data", "items", "records"):
+        if isinstance(body, dict) and isinstance(body.get(field), list):
+            jobs = body[field]
+            list_key = field
+            break
+    if jobs is None and isinstance(body, list):
+        jobs = body
+
+    if jobs:
+        _save_job_index(jobs, args.account)
+        # Inject '#' as first column so _render_table shows it on the left
+        numbered = []
+        for i, job in enumerate(jobs, start=1):
+            row: Dict[str, Any] = {"#": str(i)}
+            row.update(job)
+            numbered.append(row)
+        if list_key:
+            body = dict(body)
+            body[list_key] = numbered
+        else:
+            body = numbered
+
+    response = dict(response, body=json.dumps(body))
     _print_response(response, args)
 
 
 def cmd_jobs_start(args):
-    path = f"/api/v1/jobs/{args.job_id}/start"
+    job_id = _resolve_job_id(args.job_id, args.account)
+    path = f"/api/v1/jobs/{job_id}/start"
     response = call_api(path, method="POST", data={}, pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
@@ -530,53 +619,60 @@ def cmd_repos_states(args):
 
 
 def cmd_jobs_show(args):
-    path = f"/api/v1/jobs/{args.job_id}"
+    job_id = _resolve_job_id(args.job_id, args.account)
+    path = f"/api/v1/jobs/{job_id}"
     response = call_api(path, pretty=False, refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
 
 def cmd_jobs_stop(args):
-    path = f"/api/v1/jobs/{args.job_id}/stop"
+    job_id = _resolve_job_id(args.job_id, args.account)
+    path = f"/api/v1/jobs/{job_id}/stop"
     response = call_api(path, method="POST", data={}, pretty=False,
                         refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
 
 def cmd_jobs_enable(args):
-    path = f"/api/v1/jobs/{args.job_id}/enable"
+    job_id = _resolve_job_id(args.job_id, args.account)
+    path = f"/api/v1/jobs/{job_id}/enable"
     response = call_api(path, method="POST", data={}, pretty=False,
                         refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
 
 def cmd_jobs_disable(args):
-    path = f"/api/v1/jobs/{args.job_id}/disable"
+    job_id = _resolve_job_id(args.job_id, args.account)
+    path = f"/api/v1/jobs/{job_id}/disable"
     response = call_api(path, method="POST", data={}, pretty=False,
                         refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
 
 def cmd_jobs_retry(args):
-    path = f"/api/v1/jobs/{args.job_id}/retry"
+    job_id = _resolve_job_id(args.job_id, args.account)
+    path = f"/api/v1/jobs/{job_id}/retry"
     response = call_api(path, method="POST", data={}, pretty=False,
                         refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
 
 def cmd_jobs_delete(args):
+    job_id = _resolve_job_id(args.job_id, args.account)
     if not args.force:
-        confirm = input(f"Delete job {args.job_id}? This cannot be undone. Type 'yes' to confirm: ").strip()
+        confirm = input(f"Delete job {job_id}? This cannot be undone. Type 'yes' to confirm: ").strip()
         if confirm.lower() != "yes":
             print("Aborted.")
             return
-    path = f"/api/v1/jobs/{args.job_id}"
+    path = f"/api/v1/jobs/{job_id}"
     response = call_api(path, method="DELETE", pretty=False,
                         refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
 
 def cmd_jobs_clone(args):
-    path = f"/api/v1/jobs/{args.job_id}/clone"
+    job_id = _resolve_job_id(args.job_id, args.account)
+    path = f"/api/v1/jobs/{job_id}/clone"
     body: Dict[str, Any] = {}
     if args.name:
         body["name"] = args.name
@@ -589,7 +685,8 @@ def cmd_jobs_update(args):
     spec = _parse_json_arg(args.spec)
     if not spec:
         raise CliError("JOBS_UPDATE_SPEC_REQUIRED", "A --spec JSON body or @file is required for update.")
-    path = f"/api/v1/jobs/{args.job_id}"
+    job_id = _resolve_job_id(args.job_id, args.account)
+    path = f"/api/v1/jobs/{job_id}"
     response = call_api(path, method="PUT", data=spec, pretty=False,
                         refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
@@ -631,7 +728,8 @@ def cmd_jobs_quick_backup(args):
 def cmd_jobs_export(args):
     body: Dict[str, Any] = {}
     if args.job_ids:
-        body["jobIds"] = [j.strip() for j in args.job_ids.split(",")]
+        # Each token may be a number (index) or a UUID
+        body["jobIds"] = [_resolve_job_id(j.strip(), args.account) for j in args.job_ids.split(",")]
     if args.spec:
         body = _parse_json_arg(args.spec) or body
     response = call_api("/api/v1/automation/jobs/export", method="POST", data=body, pretty=False,
@@ -655,14 +753,16 @@ def cmd_jobs_import(args):
 
 
 def cmd_jobs_apply_policy(args):
-    path = f"/api/v1/jobs/{args.job_id}/applyConfiguration"
+    job_id = _resolve_job_id(args.job_id, args.account)
+    path = f"/api/v1/jobs/{job_id}/applyConfiguration"
     response = call_api(path, method="POST", data={}, pretty=False,
                         refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
 
 
 def cmd_jobs_clear_cache(args):
-    path = f"/api/v1/jobs/{args.job_id}/clearCache"
+    job_id = _resolve_job_id(args.job_id, args.account)
+    path = f"/api/v1/jobs/{job_id}/clearCache"
     response = call_api(path, method="POST", data={}, pretty=False,
                         refresh=args.refresh, dry_run=args.dry_run, account=args.account)
     _print_response(response, args)
@@ -673,7 +773,7 @@ def cmd_sessions_list(args):
     if args.limit:
         params["limit"] = args.limit
     if args.job_id:
-        params["jobIdFilter"] = args.job_id
+        params["jobIdFilter"] = _resolve_job_id(args.job_id, args.account)
     if args.state:
         params["stateFilter"] = args.state
     if args.result:
@@ -1024,7 +1124,7 @@ def cmd_workflow(args):
 
     payload: Dict[str, Any] = {"account": args.account}
     if args.job_id:
-        payload["jobId"] = args.job_id
+        payload["jobId"] = _resolve_job_id(args.job_id, args.account)
     if args.job_name:
         payload["jobName"] = args.job_name
     if args.spec:
@@ -1080,7 +1180,7 @@ def cmd_helper(args):
     if getattr(args, "name", None):
         payload["name"] = args.name
     if getattr(args, "job_id", None):
-        payload["jobId"] = args.job_id
+        payload["jobId"] = _resolve_job_id(args.job_id, args.account)
     if getattr(args, "session_id", None):
         payload["sessionId"] = args.session_id
     if getattr(args, "server_id", None):
@@ -2174,7 +2274,7 @@ def build_parser():
 
     def _jobs_id_cmd(name, help_text, func, extra=None):
         p = jobs_sub.add_parser(name, help=help_text)
-        p.add_argument("job_id", help="Job UUID")
+        p.add_argument("job_id", help="Job UUID or index number from `bakufu jobs list`")
         _jobs_common(p)
         if extra:
             extra(p)
@@ -2215,7 +2315,7 @@ def build_parser():
     _jobs_id_cmd("clone", "Clone an existing job", cmd_jobs_clone, _add_clone_flags)
 
     jobs_update = jobs_sub.add_parser("update", help="Full job config update via PUT (--spec JSON or @file)")
-    jobs_update.add_argument("job_id", help="Job UUID")
+    jobs_update.add_argument("job_id", help="Job UUID or index number from `bakufu jobs list`")
     jobs_update.add_argument("--spec", required=True, help="Full job spec as JSON string or @file path")
     _jobs_common(jobs_update)
     jobs_update.set_defaults(func=cmd_jobs_update)
@@ -2260,7 +2360,7 @@ def build_parser():
     _add_output_flags(sessions_list)
     sessions_list.add_argument("--limit", type=int, default=100,
                                help="Max number of sessions to return (default 100)")
-    sessions_list.add_argument("--job-id", help="Filter by job UUID")
+    sessions_list.add_argument("--job-id", help="Filter by job UUID or index number from `bakufu jobs list`")
     sessions_list.add_argument("--state", help="Filter by state: Starting, Working, Stopped, etc.")
     sessions_list.add_argument("--result", help="Filter by result: Success, Warning, Failed, None")
     sessions_list.add_argument("--filter", help="Client-side filter e.g. 'result=Failed' or 'jobName~=prod'")
@@ -2284,7 +2384,7 @@ def build_parser():
     workflows = subparsers.add_parser("workflows", help="Curated multi-step workflows")
     workflows.add_argument("workflow_id", nargs="?", choices=_workflow_choices,
                            metavar="WORKFLOW")
-    workflows.add_argument("--job-id", help="Job UUID (investigateFailedJob)")
+    workflows.add_argument("--job-id", help="Job UUID or index number from `bakufu jobs list` (investigateFailedJob)")
     workflows.add_argument("--job-name", help="Exact job name (investigateFailedJob)")
     workflows.add_argument("--spec", help="JSON spec or @file (createWasabiRepo)")
     workflows.add_argument("--wait", action="store_true",
@@ -2303,7 +2403,7 @@ def build_parser():
     helpers_cmd.add_argument("helper_id", nargs="?", choices=_helper_choices,
                              metavar="HELPER")
     helpers_cmd.add_argument("--name", help="Resource name (jobs_startByName)")
-    helpers_cmd.add_argument("--job-id", help="Job UUID")
+    helpers_cmd.add_argument("--job-id", help="Job UUID or index number from `bakufu jobs list`")
     helpers_cmd.add_argument("--session-id", help="Session UUID")
     helpers_cmd.add_argument("--server-id", help="Managed server UUID")
     helpers_cmd.add_argument("--spec", help="JSON spec or @file")
