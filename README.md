@@ -1,30 +1,37 @@
 # bakufu-cli
 
-A multi-layer admin CLI for Veeam Backup & Replication — structured commands, operational runbooks, and role-based workflows for backup admins and infrastructure engineers. Includes MCP server mode for AI agent integration.
+**A multi-layer admin CLI for Veeam Backup & Replication — structured commands, operational runbooks, and role-based workflows for backup admins and infrastructure engineers. Includes MCP server mode for AI agent integration.**
 
-> Note
+> [!NOTE]
 > This is a community project and is not an officially supported Veeam product.
 
-> Important
+> [!IMPORTANT]
 > This project is under active development. Expect changes as it evolves.
+
+<p>
+  <a href="https://github.com/anthonyspiteri/veeam-cli/releases"><img src="https://img.shields.io/github/v/release/anthonyspiteri/veeam-cli" alt="latest release"></a>
+  <a href="https://github.com/anthonyspiteri/veeam-cli/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/anthonyspiteri/veeam-cli/release.yml?label=build" alt="build status"></a>
+  <a href="https://github.com/anthonyspiteri/veeam-cli/blob/main/LICENSE"><img src="https://img.shields.io/github/license/anthonyspiteri/veeam-cli" alt="license"></a>
+</p>
 
 ## Contents
 
-- Prerequisites
-- Installation
-- Updates
-- Quick Start
-- What is bakufu?
-- Command Layers
-- Authentication
-- Workflows
-- Skills and Personas
-- MCP Server
-- Advanced Usage
-- Environment Variables
-- Architecture
-- Troubleshooting
-- Development
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Updates](#updates)
+- [Quick Start](#quick-start)
+- [What is bakufu?](#what-is-bakufu)
+- [Command Layers](#command-layers)
+- [Authentication](#authentication)
+- [Workflows](#workflows)
+- [Skills and Personas](#skills-and-personas)
+- [MCP Server](#mcp-server)
+- [Advanced Usage](#advanced-usage)
+- [Environment Variables](#environment-variables)
+- [Exit Codes](#exit-codes)
+- [Architecture](#architecture)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
 
 ## Prerequisites
 
@@ -121,12 +128,12 @@ bakufu is built in four composable layers:
 
 | Layer | Count | Description |
 |---|---|---|
-| Services | 67 | Direct Swagger-driven API operations — every VBR domain exposed as commands |
-| Helpers | 18 | Focused on a single resource or concept — may chain multiple API calls but scoped to answering "what is the state of X?" with safe write patterns and aggregations |
-| Recipes | 42 | Cross-resource operational workflows — orchestrate multiple helpers and services to answer an operational question, with prerequisites, ordered steps, and domain notes |
+| Services | 40 | Direct Swagger-driven API operations — every VBR domain exposed as commands |
+| Helpers | 20 | Focused on a single resource or concept — may chain multiple API calls but scoped to answering "what is the state of X?" with safe write patterns and aggregations |
+| Recipes | 44 | Cross-resource operational workflows — orchestrate multiple helpers and services to answer an operational question, with prerequisites, ordered steps, and domain notes |
 | Personas | 7 | Role-based skill bundles — backup-admin, storage-admin, infrastructure-engineer, and more |
 
-**Total: 109 skills**
+**Total: 109 skills** (40 services + 18 helper skill files + 44 recipes + 7 personas) · 20 helpers and 10 workflows available via CLI and MCP
 
 Run any Swagger operation dynamically:
 
@@ -141,7 +148,17 @@ bakufu schema CreateBackupJob
 
 The CLI supports account-based auth, env-based auth, and file-based auth.
 
-Interactive setup (recommended):
+### Which setup should I use?
+
+| I have… | Use |
+|---|---|
+| A VBR server and credentials | `bakufu auth setup <name> --default` (recommended) |
+| A self-signed/lab cert | Add `--insecure` to auth setup |
+| A pre-obtained bearer token | `BAKUFU_TOKEN` env var |
+| Credentials in a JSON file | `BAKUFU_CREDENTIALS_FILE` env var |
+| Multiple VBR environments | `bakufu auth login <name>` for each, then `--account <name>` per command |
+
+### Interactive setup (recommended)
 
 ```bash
 bakufu auth setup lab --default
@@ -153,7 +170,7 @@ For self-signed cert labs only:
 bakufu auth setup lab --default --insecure
 ```
 
-Direct account add:
+### Direct account add
 
 ```bash
 bakufu auth login lab \
@@ -163,7 +180,7 @@ bakufu auth login lab \
   --default
 ```
 
-Account management:
+### Account management
 
 ```bash
 bakufu auth list
@@ -172,7 +189,8 @@ bakufu auth token --refresh
 bakufu --account lab jobs list
 ```
 
-Credential storage:
+### Credential storage
+
 - Account metadata: `~/.config/bakufu/accounts.json` (or `BAKUFU_HOME` override)
 - Passwords: OS keyring (`keyring` Python package)
 - Legacy fallback: `.bakufu/accounts.json` and `.bakufu/token*.json` are still read
@@ -188,6 +206,23 @@ bakufu workflows createWasabiRepo --spec @wasabi_repo.json
 bakufu workflows capacityReport
 bakufu workflows runSecurityAnalyzer --wait --timeout-ms 600000
 bakufu workflows validateImmutability
+bakufu workflows dailyJobHealth
+bakufu workflows weeklyJobHealth
+bakufu workflows rerunFailedJob --job-name "Nightly Backup"
+bakufu workflows repositoryHealthReview
+bakufu workflows emergencyStopJob --job-name "Runaway Job"
+```
+
+List all workflows with descriptions:
+
+```bash
+bakufu workflows
+```
+
+Show full input schema for a workflow:
+
+```bash
+bakufu workflows investigateFailedJob --describe
 ```
 
 ## Skills and Personas
@@ -253,7 +288,7 @@ Flags:
 
 ## Advanced Usage
 
-Output modes:
+### Output modes
 
 ```bash
 bakufu jobs list                               # structured table (default)
@@ -261,26 +296,41 @@ bakufu jobs list --json                        # pretty JSON
 bakufu jobs list --raw                         # compact JSON
 ```
 
-Direct API path call:
+### Job index
+
+`bakufu jobs list` assigns a number to each job and caches the mapping to `~/.config/bakufu/job-index.json`. All job subcommands accept the index number instead of the UUID:
+
+```bash
+bakufu jobs list                # shows # column — jobs are numbered 1..N
+bakufu jobs show 3              # same as bakufu jobs show <uuid>
+bakufu jobs start 1
+bakufu jobs stop 2
+bakufu jobs retry 4
+bakufu sessions list --job-id 1 # filter sessions by job number
+```
+
+Run `bakufu jobs list` again at any time to refresh the index. UUIDs still work everywhere.
+
+### Direct API call
 
 ```bash
 bakufu call /api/v1/serverInfo
 ```
 
-Dry-run request preview:
+### Dry-run request preview
 
 ```bash
 bakufu run Jobs GetAllJobs --params '{"limit": 5}' --dry-run
 ```
 
-Pass a request body:
+### Request body
 
 ```bash
 bakufu run Jobs CreateBackupJob --body '{"name": "Nightly"}'
 bakufu run Jobs CreateBackupJob --body @job-spec.json
 ```
 
-Pagination (NDJSON one page per line):
+### Pagination (NDJSON one page per line)
 
 ```bash
 bakufu run Sessions GetAllSessions \
@@ -288,26 +338,13 @@ bakufu run Sessions GetAllSessions \
   --page-all --page-limit 100 --page-max 10 --page-delay 100
 ```
 
-Schema introspection by operationId:
+### Schema introspection
 
 ```bash
 bakufu schema GetAllJobs
 ```
 
-Security Analyzer:
-
-```bash
-bakufu run Security GetSecurityAnalyzerSession
-bakufu run Security GetBestPracticesComplianceResult
-```
-
-License install from local `.lic` file:
-
-```bash
-bakufu license install-file /absolute/path/to/license.lic
-```
-
-Shell completion:
+### Shell completion
 
 ```bash
 # one-step setup (auto-detects shell, writes file, updates rc):
@@ -322,21 +359,47 @@ bakufu completion zsh  > ~/.bakufu-completion.zsh  && echo 'source ~/.bakufu-com
 
 All variables are optional.
 
-- `BAKUFU_TOKEN`: Pre-obtained bearer token (highest priority)
-- `BAKUFU_SERVER`: Server URL (used with `BAKUFU_USER` + `BAKUFU_PASS`)
-- `BAKUFU_USER`: Username for direct credential mode
-- `BAKUFU_PASS`: Password for direct credential mode
-- `BAKUFU_CREDENTIALS_FILE`: Path to JSON credentials file (`server`, `username`, `password`)
-- `BAKUFU_ACCOUNT`: Default account name (overridden by `--account`)
-- `BAKUFU_HOME`: Config/token directory (default `~/.config/bakufu`)
-- `BAKUFU_SWAGGER_PATH`: Override Swagger JSON path
-- `BAKUFU_INSECURE`: Disable TLS verification (`1|true|yes|on`) for current process
+| Variable | Description |
+|---|---|
+| `BAKUFU_TOKEN` | Pre-obtained bearer token (highest priority) |
+| `BAKUFU_SERVER` | Server URL (used with `BAKUFU_USER` + `BAKUFU_PASS`) |
+| `BAKUFU_USER` | Username for direct credential mode |
+| `BAKUFU_PASS` | Password for direct credential mode |
+| `BAKUFU_CREDENTIALS_FILE` | Path to JSON credentials file (`server`, `username`, `password`) |
+| `BAKUFU_ACCOUNT` | Default account name (overridden by `--account`) |
+| `BAKUFU_HOME` | Config/token directory (default `~/.config/bakufu`) |
+| `BAKUFU_SWAGGER_PATH` | Override Swagger JSON path |
+| `BAKUFU_INSECURE` | Disable TLS verification (`1\|true\|yes\|on`) for current process |
 
 Credential resolution precedence:
-1. `BAKUFU_TOKEN` (token only)
-2. `BAKUFU_SERVER` + `BAKUFU_USER` + `BAKUFU_PASS`
-3. Account credentials (`--account` or `BAKUFU_ACCOUNT` or default account)
-4. `BAKUFU_CREDENTIALS_FILE` (or `credentials.json`)
+
+| Priority | Source |
+|---|---|
+| 1 | `BAKUFU_TOKEN` (token only) |
+| 2 | `BAKUFU_SERVER` + `BAKUFU_USER` + `BAKUFU_PASS` |
+| 3 | Account credentials (`--account` or `BAKUFU_ACCOUNT` or default account) |
+| 4 | `BAKUFU_CREDENTIALS_FILE` (or `credentials.json`) |
+
+## Exit Codes
+
+bakufu uses structured exit codes so scripts can branch on the failure type without parsing error output.
+
+| Code | Meaning | Example cause |
+|---|---|---|
+| `0` | Success | Command completed normally |
+| `1` | API error | VBR returned a 4xx/5xx response |
+| `2` | Auth error | Credentials missing, expired, or token fetch failed |
+| `3` | Usage error | Bad arguments, unknown subcommand, invalid flag |
+| `4` | Not found | File, account, or resource does not exist |
+| `5` | Internal error | Unexpected failure |
+
+```bash
+bakufu jobs show bad-uuid
+echo $?   # 1 — API error
+
+bakufu jobs unknown-subcommand
+echo $?   # 3 — usage error
+```
 
 ## Architecture
 
@@ -355,43 +418,59 @@ Execution path:
 5. Return structured JSON
 
 Command model:
-- High-level stable commands: `auth`, `jobs`, `sessions`, `workflows`, `skills`, `mcp`
-- Dynamic operation execution: `services`, `operations`, `run`, `schema`
+- High-level stable commands: `auth`, `jobs`, `sessions`, `repos`, `proxies`, `sobr`, `workflows`, `helpers`, `skills`, `mcp`
+- Dynamic operation execution: `services`, `operations`, `run`, `schema`, `call`
 
 ## Troubleshooting
 
-`zsh: event not found` when password contains `!`:
-- Use single quotes around passwords or use interactive prompt mode.
+### `zsh: event not found` when password contains `!`
+
+Use single quotes around passwords or use interactive prompt mode.
 
 ```bash
 bakufu auth setup lab --default
 ```
 
-`Failed to obtain token`:
+### `Failed to obtain token`
+
 - Verify server URL, DNS, port (`9419`), and credentials.
 - Check if REST API is reachable: `bakufu call /api/v1/serverInfo --dry-run`
 
-`SSL certificate problem`:
+### `SSL certificate problem`
+
 - Preferred: trust the VBR certificate chain on your host.
 - Temporary lab workaround: add `--insecure` to the command.
 
-`--dry-run` output and secrets:
-- `Authorization` header is redacted in request preview output.
+### `--dry-run` output and secrets
 
-No account found / wrong account used:
-- Run `bakufu auth list`
-- Set default: `bakufu auth default <name>`
-- Or override per command: `bakufu --account <name> ...`
+`Authorization` header is redacted in request preview output.
 
-Invalid command/subcommand:
-- bakufu returns structured JSON usage errors with nearest-command suggestions.
+### No account found / wrong account used
 
-Missing keyring backend:
-- Reinstall package: `uv pip install -e .`
+```bash
+bakufu auth list
+bakufu auth default <name>
+# or override per command:
+bakufu --account <name> ...
+```
 
-Schema looks outdated:
-- Drop latest schema JSON into `schemas/` and run:
-- `uv run python scripts/sync_skills_from_swagger.py`
+### Invalid command/subcommand
+
+bakufu returns structured JSON usage errors with nearest-command suggestions.
+
+### Missing keyring backend
+
+```bash
+uv pip install -e .
+```
+
+### Schema looks outdated
+
+Drop latest schema JSON into `schemas/` and run:
+
+```bash
+uv run python scripts/sync_skills_from_swagger.py
+```
 
 ## Development
 
